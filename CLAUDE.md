@@ -52,8 +52,8 @@ Before saying a task is done: run `pnpm lint`, `pnpm typecheck` and `pnpm test`.
 ```
 src/
   app/                     routes only: layouts, pages, loading, error
-    (public)/              landing
-    (auth)/onboarding/
+    (public)/              landing (/)
+    (auth)/                entrar, criar-conta, recuperar-senha, onboarding
     (app)/                 logged area with sidebar layout
       viagens/
         nova/

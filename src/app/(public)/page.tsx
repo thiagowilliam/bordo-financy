@@ -8,7 +8,7 @@ export default function LandingPage() {
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
       <Logo />
       <Button asChild variant="cta" size="lg">
-        <Link href="/viagens">Entrar</Link>
+        <Link href="/entrar">Entrar</Link>
       </Button>
     </main>
   );
