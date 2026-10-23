@@ -123,7 +123,13 @@ Defined in `src/app/globals.css` as shadcn variables. Source of truth is the Pen
 | success / warning / destructive | soft green / amber / dark coral | budget status: ok, above 80%, over budget          |
 | chart-1..8                      | from Pencil                     | category colors                                    |
 
-Financial values use the `tabular-nums` utility.
+Other tokens: `muted-foreground` `#5E7275`, `subtle-foreground` `#94A3A5`, `border`/`input` `#E6DFD1`, `secondary`/`muted` `#EFE8DB`. Status colors have `-soft` (background) and `-ink` (text) variants: `success-soft`, `success-ink`, `warning-soft`, `warning-ink`, `destructive-soft`, `destructive-ink`. Also `primary-soft`, `primary-strong`, `cta-soft`. `chart-1..6` are category colors from Pencil; `chart-7` (`#0E7C86`) and `chart-8` (`#8CC5C9`) reuse brand tones.
+
+- shadcn's `accent` is a neutral hover surface (sand). Coral is `cta`, never `accent`.
+- `--radius` is 14px. Cards use `rounded-xl`, pills use `rounded-full`.
+- Font: Figtree via `next/font` (`--font-figtree`).
+- Financial values use the `financial-value` utility (`tabular-nums lining-nums`). Dark mode: `.dark {}` is an empty placeholder.
+- Dev-only design page at `/_design` (folder `src/app/%5Fdesign`, since `_` folders are private in Next.js).
 
 ## Git
 
