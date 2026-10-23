@@ -14,6 +14,7 @@ describe("msw handlers", () => {
   it("lists trips", async () => {
     const trips = await fetchTrips();
     expect(trips.map((trip) => trip.name)).toContain("Lisboa & Sintra");
+    expect(trips.find((trip) => trip.id === LISBON_TRIP_ID)?.spentInCents).toBe(362130);
   });
 
   it("filters daily expenses by search and category", async () => {

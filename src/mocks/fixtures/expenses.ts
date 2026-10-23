@@ -1,6 +1,6 @@
 import type { Expense, PaymentMethod } from "@/features/expenses";
 
-import { LISBON_TRIP_ID } from "./trips";
+import { LISBON_TRIP_ID, tripsFixture } from "./trips";
 
 /** Base costs add up to € 2.604,90 and daily expenses to € 1.016,40 (total € 3.621,30). */
 export const LISBON_BASE_TOTAL_IN_CENTS = 260490;
@@ -109,4 +109,33 @@ export const dailyExpensesFixture: Expense[] = dailyAmounts().map((amountInCents
   };
 });
 
-export const expensesFixture: Expense[] = [...baseCostsFixture, ...dailyExpensesFixture];
+/** Amount already spent on the other trips of the list, in minor units of each trip currency. */
+const otherTripsSpent: Record<string, number> = {
+  "trip-kyoto-osaka": 214500,
+  "trip-patagonia": 112000,
+  "trip-costa-amalfitana": 438040,
+  "trip-bali": 1894000,
+};
+
+const otherTripsExpensesFixture: Expense[] = Object.entries(otherTripsSpent).map(
+  ([tripId, amountInCents]) => {
+    const trip = tripsFixture.find((item) => item.id === tripId)!;
+    return {
+      id: `total-${tripId}`,
+      tripId,
+      kind: "BASE",
+      categoryId: "cat-hospedagem",
+      paymentMethod: "CREDIT",
+      amountInCents,
+      currency: trip.currency,
+      date: trip.startDate,
+      description: "Gastos registrados",
+    };
+  },
+);
+
+export const expensesFixture: Expense[] = [
+  ...baseCostsFixture,
+  ...dailyExpensesFixture,
+  ...otherTripsExpensesFixture,
+];
