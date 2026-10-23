@@ -14,6 +14,11 @@ export const tripSchema = z.object({
   coverPhotoUrl: z.string().nullable(),
 });
 
+/** What the trips list needs: the trip plus the total already spent, computed by the API. */
+export const tripSummarySchema = tripSchema.extend({
+  spentInCents: z.number().int().nonnegative(),
+});
+
 export const createTripSchema = tripSchema
   .omit({ id: true, coverPhotoUrl: true })
   .refine((trip) => trip.endDate >= trip.startDate, {
