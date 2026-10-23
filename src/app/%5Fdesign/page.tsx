@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { Search } from "lucide-react";
 
+import { CategoryIcon } from "@/components/atoms/category-icon";
+import { Logo } from "@/components/atoms/logo";
+import { Money } from "@/components/atoms/money";
+import { StatusBadge } from "@/components/atoms/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -127,6 +131,29 @@ export default function DesignPage() {
               <span className="text-xs text-muted-foreground">{r.replace("rounded-", "")}</span>
             </div>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Atoms">
+        <div className="flex flex-wrap items-center gap-8">
+          <Logo />
+          <Logo hideTagline />
+        </div>
+        <div className="flex flex-wrap items-baseline gap-6">
+          <Money amount={362130} currency="EUR" size="xl" />
+          <Money amount={260490} currency="EUR" size="lg" tone="primary" />
+          <Money amount={101640} currency="EUR" />
+          <Money amount={50000} currency="BRL" tone="muted" />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((color) => (
+            <CategoryIcon key={color} icon="tag" color={color} />
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <StatusBadge status="ok" />
+          <StatusBadge status="warning" />
+          <StatusBadge status="over" />
         </div>
       </Section>
 
