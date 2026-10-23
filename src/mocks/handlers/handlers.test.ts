@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { server } from "../server";
 import { fetchBaseCosts } from "@/features/base-costs/api/client";
 import { fetchExpenses } from "@/features/expenses/api/client";
-import { fetchTrips } from "@/features/trips/api/client";
+import { createTrip, fetchTrips } from "@/features/trips/api/client";
 import { LISBON_TRIP_ID } from "../fixtures/trips";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -31,5 +31,19 @@ describe("msw handlers", () => {
 
   it("lists base costs", async () => {
     expect(await fetchBaseCosts(LISBON_TRIP_ID)).toHaveLength(10);
+  });
+
+  it("creates a trip without cover that then shows in the list with nothing spent", async () => {
+    const created = await createTrip({
+      name: "Santorini",
+      destination: "Grécia",
+      startDate: "2027-05-01",
+      endDate: "2027-05-10",
+      budgetInCents: 540000,
+      currency: "EUR",
+    });
+    expect(created.coverPhotoUrl).toBeNull();
+    const listed = (await fetchTrips()).find((trip) => trip.id === created.id);
+    expect(listed).toMatchObject({ name: "Santorini", spentInCents: 0 });
   });
 });
