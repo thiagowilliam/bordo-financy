@@ -14,6 +14,16 @@ describe("formatMoney", () => {
     expect(normalize(formatMoney(101640, "EUR", { hideCents: true }))).toBe("€ 1.016");
   });
 
+  it("uses the design symbols for USD and JPY and no fraction for yen", () => {
+    expect(normalize(formatMoney(112000, "USD", { trimZeroCents: true }))).toBe("US$ 1.120");
+    expect(normalize(formatMoney(214500, "JPY"))).toBe("¥ 214.500");
+  });
+
+  it("trims zero cents only when they are zero", () => {
+    expect(normalize(formatMoney(500000, "EUR", { trimZeroCents: true }))).toBe("€ 5.000");
+    expect(normalize(formatMoney(362130, "EUR", { trimZeroCents: true }))).toBe("€ 3.621,30");
+  });
+
   it("formats negative amounts", () => {
     expect(normalize(formatMoney(-1000, "EUR"))).toContain("10,00");
   });

@@ -19,6 +19,11 @@ describe("Money", () => {
     expect(screen.getByText(/1\.016$/)).toBeInTheDocument();
   });
 
+  it("can trim zero cents only", () => {
+    render(<Money amount={500000} currency="EUR" trimZeroCents />);
+    expect(screen.getByText(/5\.000$/)).toBeInTheDocument();
+  });
+
   it("rejects fractional cents", () => {
     expect(() => render(<Money amount={10.5} currency="EUR" />)).toThrow();
   });

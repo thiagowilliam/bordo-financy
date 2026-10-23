@@ -30,12 +30,15 @@ export type MoneyProps = Omit<React.ComponentProps<"span">, "children"> &
     /** ISO 4217 currency code. */
     currency: CurrencyCode;
     hideCents?: boolean;
+    /** Hides the fraction digits only when they are zero. */
+    trimZeroCents?: boolean;
   };
 
 export function Money({
   amount,
   currency,
   hideCents,
+  trimZeroCents,
   size,
   tone,
   className,
@@ -43,7 +46,7 @@ export function Money({
 }: MoneyProps) {
   return (
     <span className={cn(moneyVariants({ size, tone }), className)} {...props}>
-      {formatMoney(amount, currency, { hideCents })}
+      {formatMoney(amount, currency, { hideCents, trimZeroCents })}
     </span>
   );
 }
