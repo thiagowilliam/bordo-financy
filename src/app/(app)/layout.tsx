@@ -1,23 +1,15 @@
-import { MapPin, Tags } from "lucide-react";
-
-import { Logo } from "@/components/atoms/logo";
-import { SidebarNav } from "@/components/organisms/sidebar-nav";
+import { MobileTopBar } from "@/components/organisms/mobile-top-bar";
+import { Sidebar } from "@/components/organisms/sidebar";
 import { AppShell } from "@/components/templates/app-shell";
 
-const navItems = [
-  { href: "/viagens", label: "Minhas viagens", icon: <MapPin /> },
-  { href: "/configuracoes/categorias", label: "Categorias", icon: <Tags /> },
-] as const;
+// Static mock until auth exists.
+const user = { name: "Marina", email: "marina@email.com" };
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <AppShell
-      sidebar={
-        <>
-          <Logo />
-          <SidebarNav items={[...navItems]} />
-        </>
-      }
+      sidebar={<Sidebar user={user} />}
+      mobileHeader={<MobileTopBar userName={user.name} />}
     >
       {children}
     </AppShell>
