@@ -131,6 +131,16 @@ Other tokens: `muted-foreground` `#5E7275`, `subtle-foreground` `#94A3A5`, `bord
 - Financial values use the `financial-value` utility (`tabular-nums lining-nums`). Dark mode: `.dark {}` is an empty placeholder.
 - Dev-only design page at `/_design` (folder `src/app/%5Fdesign`, since `_` folders are private in Next.js).
 
+## Setup decisions
+
+- MSW 3: import `http`/`HttpResponse` from `msw/http`, `setupWorker` from `msw/browser`, option `onUnhandledFrame`. Mocks run only in development (`NEXT_PUBLIC_API_MOCKING=disabled` turns them off). `next.config.ts` aliases `msw/browser` for Turbopack's SSR pass.
+- `/api/*` is served by MSW. Handlers and fixtures live in `src/mocks`; every feature's client function parses responses with its Zod schema.
+- Base costs are expenses with `kind: "BASE"`. Daily expenses are `kind: "DAILY"`.
+- Client components that receive icons from a Server Component take rendered elements (`icon: <MapPin />`), not component references.
+- Vitest config is `vitest.config.mts` (`resolve.tsconfigPaths`). Testing Library cleanup runs in `vitest.setup.ts`.
+- `pnpm typecheck` runs `next typegen` first so `PageProps`/`LayoutProps` exist.
+- Storybook 10 with `@storybook/nextjs-vite`, stories colocated with components, `.storybook/preview.tsx` loads `globals.css` and Figtree.
+
 ## Git
 
 - Conventional Commits, enforced by commitlint. Use the `commit-standardizer` agent or the `commit` skill.
