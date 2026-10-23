@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { Button } from "@/components/ui/button";
+
 import { PageHeader } from "./page-header";
 
 const meta = {
@@ -22,4 +24,8 @@ export const WithEyebrow: Story = { args: { subtitle: undefined, eyebrow: "Olá,
 export const Mobile: Story = {
   ...WithEyebrow,
   globals: { viewport: { value: "mobile1", isRotated: false } },
+};
+
+export const WithAction: Story = {
+  args: { action: <Button variant="cta">Nova viagem</Button> },
 };

@@ -19,4 +19,11 @@ describe("PageHeader", () => {
     const { container } = render(<PageHeader title="Minhas viagens" />);
     expect(container.querySelectorAll("p")).toHaveLength(0);
   });
+
+  it("renders the action slot", () => {
+    render(
+      <PageHeader title="Minhas viagens" action={<button type="button">Nova viagem</button>} />,
+    );
+    expect(screen.getByRole("button", { name: "Nova viagem" })).toBeInTheDocument();
+  });
 });
