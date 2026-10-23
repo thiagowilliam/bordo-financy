@@ -1,0 +1,6 @@
+.next
+node_modules
+pnpm-lock.yaml
+storybook-static
+public/mockServiceWorker.js
+src/components/ui
