@@ -1,5 +1,9 @@
 export { tripQueryOptions, tripsQueryOptions, useTrip, useTrips } from "./api/queries";
 export { useCreateTrip } from "./api/mutations";
 export { tripKeys } from "./api/keys";
-export { createTripSchema, tripSchema } from "./schemas/trip.schema";
-export type { CreateTripInput, Trip } from "./types";
+export { createTripSchema, tripSchema, tripSummarySchema } from "./schemas/trip.schema";
+export type { CreateTripInput, Trip, TripSummary } from "./types";
+export { formatTripPeriod } from "./utils/trip-dates";
+export { getTripBadgeLabel, getTripPhase } from "./utils/trip-status";
+export type { TripPhase } from "./utils/trip-status";
+export { TripsOverview } from "./components/trips-overview";
