@@ -1,32 +1,52 @@
 import { render, screen } from "@testing-library/react";
-import { MapPin, Tags } from "lucide-react";
-import { describe, expect, it, vi } from "vitest";
+import { CirclePlus, Luggage } from "lucide-react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SidebarNav } from "./sidebar-nav";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/viagens/trip-1/dia-a-dia" }));
+const pathname = vi.hoisted(() => ({ current: "/viagens" }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
 
 const items = [
-  { href: "/viagens", label: "Minhas viagens", icon: <MapPin /> },
-  { href: "/configuracoes/categorias", label: "Categorias", icon: <Tags /> },
+  { href: "/viagens", label: "Minhas viagens", icon: <Luggage /> },
+  { href: "/viagens/nova", label: "Nova viagem", icon: <CirclePlus /> },
 ] as const;
 
+function current() {
+  return screen
+    .getAllByRole("link")
+    .filter((link) => link.getAttribute("aria-current") === "page")
+    .map((link) => link.textContent);
+}
+
 describe("SidebarNav", () => {
-  it("renders a link per item", () => {
-    render(<SidebarNav items={[...items]} />);
-    expect(screen.getByRole("link", { name: "Minhas viagens" })).toHaveAttribute(
-      "href",
-      "/viagens",
-    );
-    expect(screen.getByRole("link", { name: "Categorias" })).toBeInTheDocument();
+  beforeEach(() => {
+    pathname.current = "/viagens";
   });
 
-  it("marks the current section as active", () => {
+  it("renders a labelled nav with a link per item", () => {
     render(<SidebarNav items={[...items]} />);
-    expect(screen.getByRole("link", { name: "Minhas viagens" })).toHaveAttribute(
-      "aria-current",
-      "page",
+    expect(screen.getByRole("navigation", { name: "Navegação principal" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Nova viagem" })).toHaveAttribute(
+      "href",
+      "/viagens/nova",
     );
-    expect(screen.getByRole("link", { name: "Categorias" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("activates Minhas viagens on /viagens", () => {
+    render(<SidebarNav items={[...items]} />);
+    expect(current()).toEqual(["Minhas viagens"]);
+  });
+
+  it("activates Minhas viagens on a trip route", () => {
+    pathname.current = "/viagens/trip-1/dia-a-dia";
+    render(<SidebarNav items={[...items]} />);
+    expect(current()).toEqual(["Minhas viagens"]);
+  });
+
+  it("activates only Nova viagem on /viagens/nova", () => {
+    pathname.current = "/viagens/nova";
+    render(<SidebarNav items={[...items]} />);
+    expect(current()).toEqual(["Nova viagem"]);
   });
 });
