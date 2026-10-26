@@ -67,6 +67,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   --shadow-cta: 0 6px 16px color-mix(in oklch, var(--cta) 35%, transparent);
+  --shadow-popover: 0 14px 36px color-mix(in oklch, var(--foreground) 13%, transparent);
   --shadow-float: 0 4px 18px color-mix(in oklch, var(--foreground) 8%, transparent);
 }
 
