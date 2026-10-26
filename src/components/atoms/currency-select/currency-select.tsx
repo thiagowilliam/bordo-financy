@@ -44,7 +44,7 @@ export function CurrencySelect({
       <SelectTrigger
         id={id}
         className={cn(
-          "h-auto w-full rounded-lg border-border bg-card px-4 py-3.75 text-base text-foreground",
+          "w-full rounded-lg border-border bg-card px-4 py-3.75 text-base text-foreground data-[size=default]:h-auto",
           className,
         )}
         {...aria}
