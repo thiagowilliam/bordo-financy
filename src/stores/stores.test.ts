@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  selectExpenseDrawerEditingId,
   selectExpenseDrawerIsOpen,
   selectExpenseDrawerMode,
   useExpenseDrawerStore,
@@ -8,7 +9,9 @@ import {
 import { selectSidebarCollapsed, useSidebarStore } from "./sidebar";
 
 describe("expense drawer store", () => {
-  beforeEach(() => useExpenseDrawerStore.setState({ isOpen: false, mode: "DAILY" }));
+  beforeEach(() =>
+    useExpenseDrawerStore.setState({ isOpen: false, mode: "DAILY", editingId: null }),
+  );
 
   it("opens in the Dia a dia mode by default", () => {
     useExpenseDrawerStore.getState().open();
@@ -22,6 +25,16 @@ describe("expense drawer store", () => {
     expect(selectExpenseDrawerMode(useExpenseDrawerStore.getState())).toBe("BASE");
     useExpenseDrawerStore.getState().close();
     expect(selectExpenseDrawerIsOpen(useExpenseDrawerStore.getState())).toBe(false);
+  });
+
+  it("opens to edit an expense and forgets it on close", () => {
+    useExpenseDrawerStore.getState().edit("daily-3", "DAILY");
+    expect(selectExpenseDrawerEditingId(useExpenseDrawerStore.getState())).toBe("daily-3");
+    useExpenseDrawerStore.getState().close();
+    expect(selectExpenseDrawerEditingId(useExpenseDrawerStore.getState())).toBeNull();
+    useExpenseDrawerStore.getState().edit("daily-3", "DAILY");
+    useExpenseDrawerStore.getState().open();
+    expect(selectExpenseDrawerEditingId(useExpenseDrawerStore.getState())).toBeNull();
   });
 });
 

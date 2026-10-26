@@ -2,7 +2,12 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { server } from "../server";
 import { fetchBaseCosts } from "@/features/base-costs/api/client";
-import { fetchExpenses } from "@/features/expenses/api/client";
+import {
+  createExpense,
+  deleteExpense,
+  fetchExpenses,
+  updateExpense,
+} from "@/features/expenses/api/client";
 import { createTrip, fetchTrips } from "@/features/trips/api/client";
 import { LISBON_TRIP_ID } from "../fixtures/trips";
 
@@ -27,6 +32,28 @@ describe("msw handlers", () => {
 
     const search = await fetchExpenses(LISBON_TRIP_ID, { search: "pastéis" });
     expect(search.every((expense) => expense.description.includes("Pastéis"))).toBe(true);
+  });
+
+  it("creates, updates and deletes an expense", async () => {
+    const input = {
+      tripId: LISBON_TRIP_ID,
+      kind: "DAILY" as const,
+      categoryId: "cat-alimentacao",
+      paymentMethod: "CASH" as const,
+      amountInCents: 1000,
+      currency: "EUR",
+      date: "2026-10-22",
+      description: "Teste",
+    };
+    const created = await createExpense(input);
+    expect(await fetchExpenses(LISBON_TRIP_ID)).toHaveLength(32);
+
+    const updated = await updateExpense(created.id, { ...input, amountInCents: 2500 });
+    expect(updated).toMatchObject({ id: created.id, amountInCents: 2500 });
+
+    await deleteExpense(LISBON_TRIP_ID, created.id);
+    expect(await fetchExpenses(LISBON_TRIP_ID)).toHaveLength(31);
+    await expect(deleteExpense(LISBON_TRIP_ID, created.id)).rejects.toThrow();
   });
 
   it("lists base costs", async () => {

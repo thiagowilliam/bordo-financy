@@ -34,6 +34,26 @@ export const expenseHandlers = [
     return HttpResponse.json(expense, { status: 201 });
   }),
 
+  http.put("/api/trips/:tripId/expenses/:id", async ({ params, request }) => {
+    const input = createExpenseSchema.parse(await request.json());
+    const index = db.expenses.findIndex(
+      (expense) => expense.id === params.id && expense.tripId === params.tripId,
+    );
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    const expense = { ...input, tripId: String(params.tripId), id: String(params.id) };
+    db.expenses[index] = expense;
+    return HttpResponse.json(expense);
+  }),
+
+  http.delete("/api/trips/:tripId/expenses/:id", ({ params }) => {
+    const index = db.expenses.findIndex(
+      (expense) => expense.id === params.id && expense.tripId === params.tripId,
+    );
+    if (index === -1) return new HttpResponse(null, { status: 404 });
+    db.expenses.splice(index, 1);
+    return HttpResponse.json({ id: String(params.id) });
+  }),
+
   http.get("/api/trips/:tripId/base-costs", ({ params }) =>
     HttpResponse.json(
       db.expenses.filter((expense) => expense.tripId === params.tripId && expense.kind === "BASE"),
