@@ -15,3 +15,4 @@ export type {
   ExpenseKind,
   PaymentMethod,
 } from "./types";
+export { DailyList } from "./components/daily-list";
