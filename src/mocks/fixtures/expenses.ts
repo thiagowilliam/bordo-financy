@@ -95,7 +95,7 @@ function dailyAmounts() {
 
 export const dailyExpensesFixture: Expense[] = dailyAmounts().map((amountInCents, i) => {
   const [categoryId, description, paymentMethod] = dailyPlan[i % dailyPlan.length];
-  const day = 12 + (i % 8);
+  const day = 12 + (i % 11);
   return {
     id: `daily-${i + 1}`,
     tripId: LISBON_TRIP_ID,
@@ -104,7 +104,7 @@ export const dailyExpensesFixture: Expense[] = dailyAmounts().map((amountInCents
     paymentMethod,
     amountInCents,
     currency: "EUR",
-    date: `2026-05-${String(day).padStart(2, "0")}`,
+    date: `2026-10-${String(day).padStart(2, "0")}`,
     description,
   };
 });

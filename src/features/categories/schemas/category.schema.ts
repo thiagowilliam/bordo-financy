@@ -22,7 +22,7 @@ export const categorySchema = z.object({
   name: z.string().min(1, "Informe o nome da categoria"),
   icon: categoryIconNameSchema,
   /** Index of the `chart-N` token, 1 to 8. */
-  color: z.number().int().min(1).max(8),
+  color: z.literal([1, 2, 3, 4, 5, 6, 7, 8]),
 });
 
 export const createCategorySchema = categorySchema.omit({ id: true });
