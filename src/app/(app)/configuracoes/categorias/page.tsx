@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/molecules/page-placeholder";
+import { CategoriesSettings } from "@/features/categories";
 
 export default function CategoriasPage() {
-  return <PagePlaceholder title="Categorias" description="Em construção." />;
+  return <CategoriesSettings />;
 }

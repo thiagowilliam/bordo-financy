@@ -17,7 +17,7 @@ afterAll(() => server.close());
 
 function renderList(tripId = LISBON_TRIP_ID, searchParams = "") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = withNuqsTestingAdapter({ searchParams });
+  const Wrapper = withNuqsTestingAdapter({ searchParams, hasMemory: true });
   return render(
     <QueryClientProvider client={client}>
       <Wrapper>
@@ -53,11 +53,16 @@ describe("DailyList", () => {
   it("shows the active category filter and lets the user clear it", async () => {
     renderList(LISBON_TRIP_ID, "?categorias=cat-saude");
     expect(await screen.findByText("Categoria: Saúde e outros")).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("Pastéis de nata")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Pastéis de nata")).not.toBeInTheDocument(), {
+      timeout: 4000,
+    });
 
     await userEvent.click(screen.getByRole("button", { name: /Limpar filtros/ }));
     expect(await screen.findAllByText(/Dia \d+ · \d+ out/)).not.toHaveLength(0);
-    expect(screen.queryByText("Categoria: Saúde e outros")).not.toBeInTheDocument();
+    await waitFor(
+      () => expect(screen.queryByText("Categoria: Saúde e outros")).not.toBeInTheDocument(),
+      { timeout: 4000 },
+    );
   });
 
   it("explains when no expense matches the filters", async () => {

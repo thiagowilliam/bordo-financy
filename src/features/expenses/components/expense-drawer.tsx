@@ -102,6 +102,7 @@ function ExpenseForm({
     control,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
@@ -173,7 +174,12 @@ function ExpenseForm({
 
   async function onCreateCategory({ name, icon }: { name: string; icon: Category["icon"] }) {
     const color = ((categories.length % 8) + 1) as Category["color"];
-    const created = await createCategory.mutateAsync({ name, icon, color });
+    const created = await createCategory.mutateAsync({
+      name,
+      icon,
+      color,
+      kind: getValues("kind"),
+    });
     setValue("categoryId", created.id, { shouldValidate: true });
   }
 
@@ -192,7 +198,12 @@ function ExpenseForm({
               aria-label="Tipo de lançamento"
               options={kindOptions}
               value={field.value}
-              onValueChange={(value) => field.onChange(value as ExpenseKind)}
+              onValueChange={(value) => {
+                field.onChange(value as ExpenseKind);
+                // Categories belong to one kind: drop the choice if it does not fit the new one.
+                const current = categories.find((c) => c.id === getValues("categoryId"));
+                if (current && current.kind !== value) setValue("categoryId", "");
+              }}
             />
           )}
         />
@@ -236,13 +247,18 @@ function ExpenseForm({
                 label={labels.categoryLabel}
                 value={field.value || undefined}
                 onValueChange={field.onChange}
-                categories={categories.map((category) => ({
-                  id: category.id,
-                  name: category.name,
-                  icon: category.icon,
-                  color: category.color,
-                  usageCount: usageByCategory.get(category.id) ?? 0,
-                }))}
+                categories={categories
+                  .filter(
+                    (category) =>
+                      category.kind === kind && (!category.hidden || category.id === field.value),
+                  )
+                  .map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                    icon: category.icon,
+                    color: category.color,
+                    usageCount: usageByCategory.get(category.id) ?? 0,
+                  }))}
                 onCreateCategory={onCreateCategory}
                 isCreating={createCategory.isPending}
                 error={errors.categoryId?.message}

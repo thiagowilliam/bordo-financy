@@ -1,0 +1,78 @@
+import type { CategoryListItem } from "./category-list";
+
+const noop = () => {};
+const base = { currency: "EUR", onEdit: noop, onToggleHidden: noop, onDelete: noop } as const;
+
+export const lisbonCategories: CategoryListItem[] = [
+  {
+    ...base,
+    id: "1",
+    name: "Alimentação",
+    icon: "utensils",
+    color: 1,
+    isDefault: true,
+    usageCount: 12,
+    totalInCents: 41230,
+  },
+  {
+    ...base,
+    id: "2",
+    name: "Passeios",
+    icon: "ticket",
+    color: 2,
+    isDefault: true,
+    usageCount: 5,
+    totalInCents: 21800,
+  },
+  {
+    ...base,
+    id: "3",
+    name: "Transporte",
+    icon: "bus",
+    color: 3,
+    isDefault: true,
+    usageCount: 5,
+    totalInCents: 14260,
+  },
+  {
+    ...base,
+    id: "4",
+    name: "Compras",
+    icon: "shopping-bag",
+    color: 4,
+    isDefault: true,
+    usageCount: 3,
+    totalInCents: 12850,
+  },
+  {
+    ...base,
+    id: "5",
+    name: "Combustível",
+    icon: "fuel",
+    color: 5,
+    isDefault: false,
+    usageCount: 2,
+    totalInCents: 6200,
+  },
+  {
+    ...base,
+    id: "6",
+    name: "Gorjetas",
+    icon: "coins",
+    color: 6,
+    isDefault: false,
+    usageCount: 3,
+    totalInCents: 2800,
+  },
+  {
+    ...base,
+    id: "7",
+    name: "Saúde e outros",
+    icon: "heart-pulse",
+    color: 7,
+    isDefault: true,
+    hidden: true,
+    usageCount: 1,
+    totalInCents: 2500,
+  },
+];

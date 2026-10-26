@@ -5,13 +5,17 @@ import {
   Bus,
   Camera,
   Car,
+  Coffee,
   Coins,
   Dog,
   Dumbbell,
+  Ellipsis,
+  FileText,
   Fuel,
   Gift,
   Heart,
   HeartPulse,
+  Landmark,
   Music,
   Pill,
   Plane,
@@ -56,6 +60,10 @@ export const categoryIcons = {
   scissors: Scissors,
   wine: Wine,
   heart: Heart,
+  coffee: Coffee,
+  landmark: Landmark,
+  "file-text": FileText,
+  ellipsis: Ellipsis,
 } as const satisfies Record<string, LucideIcon>;
 
 export type CategoryIconName = keyof typeof categoryIcons;
