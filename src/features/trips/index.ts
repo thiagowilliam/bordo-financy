@@ -8,3 +8,4 @@ export { getTripBadgeLabel, getTripPhase } from "./utils/trip-status";
 export type { TripPhase } from "./utils/trip-status";
 export { TripsOverview } from "./components/trips-overview";
 export { NewTripForm } from "./components/new-trip-form";
+export { TripOverview } from "./components/trip-overview";
