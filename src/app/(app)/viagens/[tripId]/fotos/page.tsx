@@ -1,6 +1,6 @@
-import { PagePlaceholder } from "@/components/molecules/page-placeholder";
+import { PhotosScreen } from "@/features/photos";
 
 export default async function FotosPage({ params }: PageProps<"/viagens/[tripId]/fotos">) {
   const { tripId } = await params;
-  return <PagePlaceholder title="Fotos" description={`Viagem ${tripId} · em construção.`} />;
+  return <PhotosScreen tripId={tripId} />;
 }

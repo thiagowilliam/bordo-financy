@@ -20,10 +20,12 @@ export async function apiFetch<TSchema extends z.ZodType>(
   schema: TSchema,
   { body, headers, ...init }: RequestOptions = {},
 ): Promise<z.infer<TSchema>> {
+  // FormData sets its own multipart Content-Type (with the boundary), so it must not be forced.
+  const isFormData = body instanceof FormData;
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...headers },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: isFormData ? headers : { "Content-Type": "application/json", ...headers },
+    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
   });
   if (!response.ok) throw new ApiError(response.status, response.statusText);
   return schema.parse(await response.json());
