@@ -16,3 +16,6 @@ export type {
   PaymentMethod,
 } from "./types";
 export { DailyList } from "./components/daily-list";
+export { useUpdateExpense, useDeleteExpense } from "./api/mutations";
+export { deletedExpenseSchema } from "./schemas/expense.schema";
+export { ExpenseDrawer } from "./components/expense-drawer";

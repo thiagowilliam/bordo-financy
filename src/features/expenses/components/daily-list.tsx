@@ -18,6 +18,7 @@ import { useExpenseDrawerStore } from "@/stores/expense-drawer";
 
 import { useExpenses } from "../api/queries";
 import { useExpenseFilters } from "../hooks/use-expense-filters";
+import { useExpenseRowActions } from "../hooks/use-expense-row-actions";
 import { getAverageDailyInCents, groupExpensesByDay, summarizePeriod } from "../utils/daily-list";
 
 export type DailyListProps = {
@@ -50,6 +51,7 @@ export function DailyList({ tripId, today }: DailyListProps) {
   const categories = useCategories();
   const openDrawer = useExpenseDrawerStore((state) => state.open);
   const [visibleDays, setVisibleDays] = useState(DAYS_PER_PAGE);
+  const rowActions = useExpenseRowActions(tripId, "DAILY");
 
   const tripDates = useMemo(
     () => ({
@@ -213,10 +215,12 @@ export function DailyList({ tripId, today }: DailyListProps) {
                   trend={group.trend}
                   totalInCents={group.totalInCents}
                   currency={currency}
+                  renderActions={rowActions.actions}
                   entries={group.expenses.map((expense) => {
                     const category = categoriesById.get(expense.categoryId);
                     return {
                       id: expense.id,
+                      onSelect: rowActions.select(expense.id),
                       description: expense.description,
                       categoryName: category?.name ?? "Sem categoria",
                       categoryIcon: category?.icon ?? "tag",
@@ -254,6 +258,7 @@ export function DailyList({ tripId, today }: DailyListProps) {
           </div>
         </>
       ) : null}
+      {rowActions.confirmDialog}
     </div>
   );
 }

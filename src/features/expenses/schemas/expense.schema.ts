@@ -26,3 +26,5 @@ export const expenseFiltersSchema = z.object({
   to: z.iso.date().optional(),
   paymentMethod: paymentMethodSchema.optional(),
 });
+
+export const deletedExpenseSchema = z.object({ id: z.string() });

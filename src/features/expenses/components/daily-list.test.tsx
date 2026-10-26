@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { withNuqsTestingAdapter } from "nuqs/adapters/testing";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
+import { fetchExpenses } from "../api/client";
+import { useExpenseDrawerStore } from "@/stores/expense-drawer";
 import { LISBON_TRIP_ID } from "@/mocks/fixtures/trips";
 import { server } from "@/mocks/server";
 
@@ -51,7 +53,7 @@ describe("DailyList", () => {
   it("shows the active category filter and lets the user clear it", async () => {
     renderList(LISBON_TRIP_ID, "?categorias=cat-saude");
     expect(await screen.findByText("Categoria: Saúde e outros")).toBeInTheDocument();
-    expect(screen.queryByText("Pastéis de nata")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Pastéis de nata")).not.toBeInTheDocument());
 
     await userEvent.click(screen.getByRole("button", { name: /Limpar filtros/ }));
     expect(await screen.findAllByText(/Dia \d+ · \d+ out/)).not.toHaveLength(0);
@@ -66,5 +68,22 @@ describe("DailyList", () => {
   it("shows the empty state for a trip without expenses", async () => {
     renderList("trip-kyoto-osaka");
     expect(await screen.findByText("Nenhum gasto lançado ainda")).toBeInTheDocument();
+  });
+
+  it("opens the drawer to edit a row", async () => {
+    renderList();
+    const [row] = await screen.findAllByRole("button", { name: /^Editar lançamento: / });
+    await userEvent.click(row);
+    expect(useExpenseDrawerStore.getState()).toMatchObject({ isOpen: true });
+    expect(useExpenseDrawerStore.getState().editingId).not.toBeNull();
+  });
+
+  it("deletes a row after confirming", async () => {
+    const before = (await fetchExpenses(LISBON_TRIP_ID)).length;
+    renderList();
+    const [remove] = await screen.findAllByRole("button", { name: "Excluir lançamento" });
+    await userEvent.click(remove);
+    await userEvent.click(await screen.findByRole("button", { name: "Excluir" }));
+    await waitFor(async () => expect(await fetchExpenses(LISBON_TRIP_ID)).toHaveLength(before - 1));
   });
 });

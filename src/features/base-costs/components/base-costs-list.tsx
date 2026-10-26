@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/features/categories";
 import { useTrip } from "@/features/trips/api/queries";
 import { TripTopBar } from "@/features/trips/components/trip-top-bar";
+import { useExpenseRowActions } from "@/features/expenses/hooks/use-expense-row-actions";
 import { useExpenseDrawerStore } from "@/stores/expense-drawer";
 
 import { useBaseCosts } from "../api/queries";
@@ -55,6 +56,7 @@ export function BaseCostsList({ tripId }: BaseCostsListProps) {
   const trip = useTrip(tripId);
   const baseCosts = useBaseCosts(tripId);
   const categories = useCategories();
+  const rowActions = useExpenseRowActions(tripId, "BASE");
 
   const overview = useMemo(
     () =>
@@ -141,6 +143,8 @@ export function BaseCostsList({ tripId }: BaseCostsListProps) {
                   currency={trip.data.currency}
                   items={group.items.map((item) => ({
                     id: item.id,
+                    onSelect: rowActions.select(item.id),
+                    actions: rowActions.actions(item.id),
                     description: item.description,
                     paidOnLabel: formatPaidOn(item.date),
                     amountInCents: item.amountInCents,
@@ -152,6 +156,7 @@ export function BaseCostsList({ tripId }: BaseCostsListProps) {
           </div>
         </>
       ) : null}
+      {rowActions.confirmDialog}
     </div>
   );
 }

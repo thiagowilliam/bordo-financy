@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { apiFetch } from "@/lib/api-client";
 
-import { expenseSchema } from "../schemas/expense.schema";
+import { deletedExpenseSchema, expenseSchema } from "../schemas/expense.schema";
 import type { CreateExpenseInput, ExpenseFilters } from "../types";
 
 export function fetchExpenses(tripId: string, filters: ExpenseFilters = {}) {
@@ -17,3 +17,12 @@ export function fetchExpenses(tripId: string, filters: ExpenseFilters = {}) {
 
 export const createExpense = (input: CreateExpenseInput) =>
   apiFetch(`/api/trips/${input.tripId}/expenses`, expenseSchema, { method: "POST", body: input });
+
+export const updateExpense = (id: string, input: CreateExpenseInput) =>
+  apiFetch(`/api/trips/${input.tripId}/expenses/${id}`, expenseSchema, {
+    method: "PUT",
+    body: input,
+  });
+
+export const deleteExpense = (tripId: string, id: string) =>
+  apiFetch(`/api/trips/${tripId}/expenses/${id}`, deletedExpenseSchema, { method: "DELETE" });
