@@ -19,3 +19,11 @@ describe("CategoryIcon", () => {
     expect(screen.getByRole("img")).toHaveClass("bg-chart-2");
   });
 });
+
+describe("CategoryIcon soft tone", () => {
+  it("uses a tinted background and colored icon", () => {
+    const { container } = render(<CategoryIcon icon="utensils" color={3} tone="soft" />);
+    expect(container.firstElementChild).toHaveClass("bg-chart-3/13", "text-chart-3");
+    expect(container.firstElementChild).not.toHaveClass("text-white");
+  });
+});

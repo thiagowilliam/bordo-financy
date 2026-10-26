@@ -38,25 +38,48 @@ export const categoryIcons = {
 
 export type CategoryIconName = keyof typeof categoryIcons;
 
-const categoryIconVariants = cva("flex shrink-0 items-center justify-center text-white", {
+const categoryIconVariants = cva("flex shrink-0 items-center justify-center", {
   variants: {
     size: {
       sm: "size-8 rounded-lg [&_svg]:size-4",
-      md: "size-[42px] rounded-xl [&_svg]:size-5",
+      md: "size-11 rounded-lg [&_svg]:size-5",
       lg: "size-14 rounded-2xl [&_svg]:size-7",
     },
+    /** `solid` is a filled tile with a white icon; `soft` is a tinted tile with a colored icon. */
+    tone: {
+      solid: "text-white",
+      soft: "",
+    },
     color: {
-      1: "bg-chart-1",
-      2: "bg-chart-2",
-      3: "bg-chart-3",
-      4: "bg-chart-4",
-      5: "bg-chart-5",
-      6: "bg-chart-6",
-      7: "bg-chart-7",
-      8: "bg-chart-8",
+      1: "",
+      2: "",
+      3: "",
+      4: "",
+      5: "",
+      6: "",
+      7: "",
+      8: "",
     },
   },
-  defaultVariants: { size: "md", color: 1 },
+  compoundVariants: [
+    { tone: "solid", color: 1, className: "bg-chart-1" },
+    { tone: "solid", color: 2, className: "bg-chart-2" },
+    { tone: "solid", color: 3, className: "bg-chart-3" },
+    { tone: "solid", color: 4, className: "bg-chart-4" },
+    { tone: "solid", color: 5, className: "bg-chart-5" },
+    { tone: "solid", color: 6, className: "bg-chart-6" },
+    { tone: "solid", color: 7, className: "bg-chart-7" },
+    { tone: "solid", color: 8, className: "bg-chart-8" },
+    { tone: "soft", color: 1, className: "bg-chart-1/13 text-chart-1" },
+    { tone: "soft", color: 2, className: "bg-chart-2/13 text-chart-2" },
+    { tone: "soft", color: 3, className: "bg-chart-3/13 text-chart-3" },
+    { tone: "soft", color: 4, className: "bg-chart-4/13 text-chart-4" },
+    { tone: "soft", color: 5, className: "bg-chart-5/13 text-chart-5" },
+    { tone: "soft", color: 6, className: "bg-chart-6/13 text-chart-6" },
+    { tone: "soft", color: 7, className: "bg-chart-7/13 text-chart-7" },
+    { tone: "soft", color: 8, className: "bg-chart-8/13 text-chart-8" },
+  ],
+  defaultVariants: { size: "md", tone: "solid", color: 1 },
 });
 
 export type CategoryIconProps = Omit<React.ComponentProps<"span">, "children" | "color"> &
@@ -66,11 +89,19 @@ export type CategoryIconProps = Omit<React.ComponentProps<"span">, "children" | 
     label?: string;
   };
 
-export function CategoryIcon({ icon, color, size, label, className, ...props }: CategoryIconProps) {
+export function CategoryIcon({
+  icon,
+  color,
+  size,
+  tone,
+  label,
+  className,
+  ...props
+}: CategoryIconProps) {
   const Icon = categoryIcons[icon];
   return (
     <span
-      className={cn(categoryIconVariants({ size, color }), className)}
+      className={cn(categoryIconVariants({ size, tone, color }), className)}
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
