@@ -9,3 +9,5 @@ export type { TripPhase } from "./utils/trip-status";
 export { TripsOverview } from "./components/trips-overview";
 export { NewTripForm } from "./components/new-trip-form";
 export { TripOverview } from "./components/trip-overview";
+export { TripSidebarMenu } from "./components/trip-sidebar-menu";
+export { TripMobileNav } from "./components/trip-mobile-nav";
