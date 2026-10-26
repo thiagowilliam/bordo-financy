@@ -15,6 +15,17 @@ export const categoryIconNameSchema = z.enum([
   "wifi",
   "ticket",
   "tag",
+  "pill",
+  "shirt",
+  "baby",
+  "dog",
+  "music",
+  "gift",
+  "book-open",
+  "dumbbell",
+  "scissors",
+  "wine",
+  "heart",
 ]);
 
 export const categorySchema = z.object({
