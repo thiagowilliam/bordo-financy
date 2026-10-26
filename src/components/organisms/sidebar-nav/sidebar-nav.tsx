@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { usePathname } from "next/navigation";
 
 import { NavItem } from "@/components/molecules/nav-item";
+import { findActiveHref } from "@/lib/active-nav";
 import { cn } from "@/lib/utils";
 
 export type SidebarNavItem = {
@@ -11,26 +12,13 @@ export type SidebarNavItem = {
   label: string;
   /** Rendered element (not a component) so it can cross the server/client boundary. */
   icon: React.ReactNode;
+  /** Active only when the pathname equals the href (no prefix match). */
+  exact?: boolean;
 };
 
 export type SidebarNavProps = Omit<React.ComponentProps<"nav">, "children"> & {
   items: SidebarNavItem[];
 };
-
-function matches(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-/** The most specific matching item wins, so /viagens/nova does not activate /viagens. */
-function findActiveHref(pathname: string, items: SidebarNavItem[]) {
-  let active: string | undefined;
-  for (const { href } of items) {
-    if (matches(pathname, href) && (active === undefined || href.length > active.length)) {
-      active = href;
-    }
-  }
-  return active;
-}
 
 export function SidebarNav({ items, className, ...props }: SidebarNavProps) {
   const pathname = usePathname();

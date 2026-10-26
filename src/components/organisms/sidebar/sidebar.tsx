@@ -6,7 +6,7 @@ import { SidebarNav, type SidebarNavItem } from "@/components/organisms/sidebar-
 import { cn } from "@/lib/utils";
 
 const globalItems: SidebarNavItem[] = [
-  { href: "/viagens", label: "Minhas viagens", icon: <Luggage /> },
+  { href: "/viagens", label: "Minhas viagens", icon: <Luggage />, exact: true },
   { href: "/viagens/nova", label: "Nova viagem", icon: <CirclePlus /> },
   // No profile route yet: the typed-route cast goes away when it exists.
   { href: "/perfil" as SidebarNavItem["href"], label: "Perfil", icon: <User /> },
@@ -15,23 +15,26 @@ const globalItems: SidebarNavItem[] = [
 
 export type SidebarProps = Omit<React.ComponentProps<"div">, "children"> & {
   user: { name: string; email: string };
+  /** Trip menu shown below the global menu while a trip is open. */
+  tripMenu?: React.ReactNode;
 };
 
 /** Full desktop sidebar column: logo, global menu and user card. */
-export function Sidebar({ user, className, ...props }: SidebarProps) {
+export function Sidebar({ user, tripMenu, className, ...props }: SidebarProps) {
   return (
     <div
       className={cn(
-        "flex h-full w-64 flex-col justify-between border-r border-border bg-card px-5 py-7",
+        "flex h-full w-66 flex-col justify-between border-r border-border bg-card px-5 py-7",
         className,
       )}
       {...props}
     >
-      <div className="flex flex-col gap-7">
+      <div className="flex min-h-0 flex-col gap-7 overflow-y-auto">
         <Logo className="px-2" />
         <SidebarNav items={globalItems} />
+        {tripMenu}
       </div>
-      <UserCard name={user.name} email={user.email} />
+      <UserCard className="shrink-0" name={user.name} email={user.email} />
     </div>
   );
 }

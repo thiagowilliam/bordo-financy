@@ -49,4 +49,21 @@ describe("SidebarNav", () => {
     render(<SidebarNav items={[...items]} />);
     expect(current()).toEqual(["Nova viagem"]);
   });
+
+  it("does not prefix-match exact items", () => {
+    pathname.current = "/viagens/trip-1/dia-a-dia";
+    const exactItems = [{ ...items[0], exact: true }, items[1]];
+    render(<SidebarNav items={exactItems} />);
+    expect(current()).toEqual([]);
+  });
+
+  it("still matches an exact item on its own path", () => {
+    render(<SidebarNav items={[{ ...items[0], exact: true }]} />);
+    expect(current()).toEqual(["Minhas viagens"]);
+  });
+
+  it("accepts an aria-label override", () => {
+    render(<SidebarNav items={[...items]} aria-label="Navegação da viagem" />);
+    expect(screen.getByRole("navigation", { name: "Navegação da viagem" })).toBeInTheDocument();
+  });
 });

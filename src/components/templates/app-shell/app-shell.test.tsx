@@ -23,4 +23,21 @@ describe("AppShell", () => {
     const { container } = render(<AppShell sidebar={<p>Menu</p>}>Conteúdo</AppShell>);
     expect(container.querySelector(".md\\:hidden")).toBeNull();
   });
+
+  it("renders the mobile nav slot and reserves room for it", () => {
+    render(
+      <AppShell sidebar={<p>Menu</p>} mobileNav={<p>Abas</p>}>
+        Conteúdo
+      </AppShell>,
+    );
+    expect(screen.getByText("Abas")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveClass(
+      "group-has-[[data-mobile-nav]:not(:empty)]/shell:pb-28",
+    );
+  });
+
+  it("does not render the nav wrapper when there is no mobile nav", () => {
+    render(<AppShell sidebar={<p>Menu</p>}>Conteúdo</AppShell>);
+    expect(document.querySelector("[data-mobile-nav]")).toBeNull();
+  });
 });

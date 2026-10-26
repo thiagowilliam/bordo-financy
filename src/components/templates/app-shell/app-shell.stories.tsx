@@ -25,3 +25,14 @@ export const Default: Story = {};
 export const Mobile: Story = {
   globals: { viewport: { value: "mobile1", isRotated: false } },
 };
+
+export const WithMobileNav: Story = {
+  args: {
+    mobileNav: (
+      <div className="flex h-16 items-center justify-center rounded-[32px] border border-border bg-card shadow-float">
+        Abas da viagem
+      </div>
+    ),
+  },
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+};
