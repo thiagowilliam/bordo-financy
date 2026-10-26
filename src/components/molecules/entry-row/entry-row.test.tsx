@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import { EntryRow, type EntryRowProps } from "./entry-row";
 
@@ -48,5 +49,41 @@ describe("EntryRow", () => {
     expect(screen.getByRole("button", { name: "Excluir lançamento" })).toBeInTheDocument();
     const slot = container.querySelector("[data-slot='entry-actions']");
     expect(slot).toHaveClass("group-hover:opacity-100", "group-focus-within:opacity-100");
+  });
+
+  describe("selectable", () => {
+    it("has no button without onSelect", () => {
+      render(<EntryRow {...base} />);
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    });
+
+    it("wraps content in a named button that fires onSelect on click, Enter and Space", async () => {
+      const onSelect = vi.fn();
+      render(<EntryRow {...base} onSelect={onSelect} />);
+      const button = screen.getByRole("button", {
+        name: "Editar lançamento: Almoço no Time Out Market",
+      });
+      expect(button).toHaveAttribute("type", "button");
+      expect(button).toHaveTextContent("€ 24,50");
+      await userEvent.click(button);
+      button.focus();
+      await userEvent.keyboard("{Enter}");
+      await userEvent.keyboard(" ");
+      expect(onSelect).toHaveBeenCalledTimes(3);
+    });
+
+    it("keeps actions outside the select button", () => {
+      const { container } = render(
+        <EntryRow
+          {...base}
+          onSelect={() => {}}
+          actions={<button type="button" aria-label="Excluir lançamento" />}
+        />,
+      );
+      const select = screen.getByRole("button", { name: /^Editar lançamento: / });
+      const action = screen.getByRole("button", { name: "Excluir lançamento" });
+      expect(select).not.toContainElement(action);
+      expect(container.querySelector("[data-slot='entry-actions']")).toContainElement(action);
+    });
   });
 });

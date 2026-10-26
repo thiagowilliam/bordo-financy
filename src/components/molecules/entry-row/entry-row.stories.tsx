@@ -1,6 +1,8 @@
 import { Pencil, Trash2 } from "lucide-react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { RowActionButton } from "@/components/molecules/row-action-button";
+
 import { EntryRow } from "./entry-row";
 
 const actionClass =
@@ -65,6 +67,20 @@ export const WithActions: Story = {
         <button type="button" aria-label="Excluir lançamento" className={actionClass}>
           <Trash2 aria-hidden className="size-4 text-destructive" />
         </button>
+      </>
+    ),
+  },
+};
+
+export const Selectable: Story = { args: { onSelect: () => {} } };
+
+export const SelectableWithActions: Story = {
+  args: {
+    onSelect: () => {},
+    actions: (
+      <>
+        <RowActionButton icon={<Pencil />} label="Editar lançamento" />
+        <RowActionButton tone="destructive" icon={<Trash2 />} label="Excluir lançamento" />
       </>
     ),
   },

@@ -1,4 +1,7 @@
+import { Pencil, Trash2 } from "lucide-react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+
+import { RowActionButton } from "@/components/molecules/row-action-button";
 
 import { CostGroup } from "./cost-group";
 
@@ -58,6 +61,27 @@ export const SingleItem: Story = {
         paidOnLabel: "Pago em 20 jul",
         amountInCents: 105000,
         currency: "EUR",
+      },
+    ],
+  },
+};
+
+export const Selectable: Story = {
+  args: {
+    items: [
+      {
+        id: "out",
+        description: "Voo de ida GRU → LIS · TAP",
+        paidOnLabel: "Pago em 14 jul",
+        amountInCents: 61240,
+        currency: "EUR",
+        onSelect: () => {},
+        actions: (
+          <>
+            <RowActionButton icon={<Pencil />} label="Editar custo" />
+            <RowActionButton tone="destructive" icon={<Trash2 />} label="Excluir custo" />
+          </>
+        ),
       },
     ],
   },

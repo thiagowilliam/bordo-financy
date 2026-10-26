@@ -1,4 +1,7 @@
+import { Pencil, Trash2 } from "lucide-react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+
+import { RowActionButton } from "@/components/molecules/row-action-button";
 
 import { CostItemRow } from "./cost-item-row";
 
@@ -34,4 +37,17 @@ export const LongDescription: Story = {
       </div>
     ),
   ],
+};
+
+export const Selectable: Story = { args: { onSelect: () => {} } };
+export const SelectableWithActions: Story = {
+  args: {
+    onSelect: () => {},
+    actions: (
+      <>
+        <RowActionButton icon={<Pencil />} label="Editar custo" />
+        <RowActionButton tone="destructive" icon={<Trash2 />} label="Excluir custo" />
+      </>
+    ),
+  },
 };

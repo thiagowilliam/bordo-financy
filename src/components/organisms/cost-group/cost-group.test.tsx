@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import { CostGroup, type CostGroupProps } from "./cost-group";
 
@@ -42,5 +43,27 @@ describe("CostGroup", () => {
     expect(within(list).getAllByRole("listitem")).toHaveLength(2);
     expect(within(list).getByText("€ 612,40")).toBeInTheDocument();
     expect(within(list).getByText("Voo de volta")).toBeInTheDocument();
+  });
+
+  it("makes items selectable and renders their actions outside the button", async () => {
+    const onSelect = vi.fn();
+    render(
+      <CostGroup
+        {...base}
+        items={[
+          {
+            ...base.items[0]!,
+            onSelect,
+            actions: <button type="button" aria-label="Excluir custo" />,
+          },
+          base.items[1]!,
+        ]}
+      />,
+    );
+    const select = screen.getByRole("button", { name: "Editar custo: Voo de ida" });
+    await userEvent.click(select);
+    expect(onSelect).toHaveBeenCalledOnce();
+    expect(select).not.toContainElement(screen.getByRole("button", { name: "Excluir custo" }));
+    expect(screen.queryByRole("button", { name: /Voo de volta/ })).not.toBeInTheDocument();
   });
 });

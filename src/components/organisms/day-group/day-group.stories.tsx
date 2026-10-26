@@ -1,6 +1,8 @@
 import { Pencil, Trash2 } from "lucide-react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { RowActionButton } from "@/components/molecules/row-action-button";
+
 import { DayGroup, type DayGroupEntry } from "./day-group";
 
 const entries: DayGroupEntry[] = [
@@ -129,4 +131,16 @@ export const Mobile: Story = {
       </div>
     ),
   ],
+};
+
+export const Selectable: Story = {
+  args: {
+    entries: entries.map((entry) => ({ ...entry, onSelect: () => {} })),
+    renderActions: () => (
+      <>
+        <RowActionButton icon={<Pencil />} label="Editar lançamento" />
+        <RowActionButton tone="destructive" icon={<Trash2 />} label="Excluir lançamento" />
+      </>
+    ),
+  },
 };

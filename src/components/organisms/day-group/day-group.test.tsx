@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import { DayGroup, type DayGroupProps } from "./day-group";
 
@@ -60,5 +61,23 @@ describe("DayGroup", () => {
     );
     expect(screen.getByRole("button", { name: "Editar 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Editar 2" })).toBeInTheDocument();
+  });
+
+  it("makes only entries with onSelect selectable", async () => {
+    const onSelect = vi.fn();
+    render(
+      <DayGroup
+        {...base}
+        entries={[{ ...base.entries[0]!, onSelect }, base.entries[1]!]}
+        renderActions={(id) => <button type="button" aria-label={`Excluir ${id}`} />}
+      />,
+    );
+    const select = screen.getByRole("button", {
+      name: "Editar lançamento: Almoço no Time Out Market",
+    });
+    await userEvent.click(select);
+    expect(onSelect).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: /Metrô/ })).not.toBeInTheDocument();
+    expect(select).not.toContainElement(screen.getByRole("button", { name: "Excluir 1" }));
   });
 });

@@ -25,6 +25,8 @@ export type EntryRowProps = Omit<React.ComponentProps<"div">, "children"> & {
   currency: CurrencyCode;
   /** Desktop-only controls (edit, delete) revealed on hover or focus within. */
   actions?: React.ReactNode;
+  /** Makes the row selectable (e.g. open the edit drawer). Content becomes a real button. */
+  onSelect?: () => void;
 };
 
 /** One daily expense line: category tile, title, category and payment meta, amount. */
@@ -37,19 +39,13 @@ export function EntryRow({
   amountInCents,
   currency,
   actions,
+  onSelect,
   className,
   ...props
 }: EntryRowProps) {
   const PaymentIcon = paymentIcons[paymentMethodIconNames[paymentMethod]];
-  return (
-    <div
-      className={cn(
-        "group flex items-center gap-3.5 py-3.5",
-        actions && "md:hover:bg-background",
-        className,
-      )}
-      {...props}
-    >
+  const content = (
+    <>
       <CategoryIcon icon={categoryIcon} color={categoryColor} tone="soft" size="md" />
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <span className="truncate text-base font-semibold text-foreground">{description}</span>
@@ -62,19 +58,59 @@ export function EntryRow({
           <span className="shrink-0">{paymentMethodLabels[paymentMethod]}</span>
         </span>
       </div>
-      {actions ? (
-        <div
-          data-slot="entry-actions"
-          className="hidden shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 md:flex"
+    </>
+  );
+  const amount = (
+    <Money
+      amount={amountInCents}
+      currency={currency}
+      className="shrink-0 text-right font-semibold"
+    />
+  );
+  const actionsSlot = actions ? (
+    <div
+      data-slot="entry-actions"
+      className={cn(
+        "hidden shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 md:flex",
+        onSelect && "md:mr-1",
+      )}
+    >
+      {actions}
+    </div>
+  ) : null;
+
+  if (onSelect) {
+    return (
+      <div
+        className={cn("group flex items-center gap-1.5 md:hover:bg-background", className)}
+        {...props}
+      >
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-label={`Editar lançamento: ${description}`}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3.5 py-3.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
         >
-          {actions}
-        </div>
-      ) : null}
-      <Money
-        amount={amountInCents}
-        currency={currency}
-        className="shrink-0 text-right font-semibold"
-      />
+          {content}
+          {amount}
+        </button>
+        {actionsSlot}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-3.5 py-3.5",
+        actions && "md:hover:bg-background",
+        className,
+      )}
+      {...props}
+    >
+      {content}
+      {actionsSlot}
+      {amount}
     </div>
   );
 }
