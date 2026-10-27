@@ -1,12 +1,14 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { ApiError } from "@/lib/api-client";
-import { MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
+import { MOCK_EXPIRED_TOKEN, MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
 import { server } from "@/mocks/server";
 
 import {
   fetchSession,
-  getGoogleSignInUrl,
+  fetchResetToken,
+  getGoogleUrl,
+  resetPassword,
   requestPasswordRecovery,
   signIn,
   signOut,
@@ -45,7 +47,19 @@ describe("auth api (msw)", () => {
   });
 
   it("builds the Google URL as a navigation target", () => {
-    expect(getGoogleSignInUrl()).toBe("/api/auth/google");
-    expect(getGoogleSignInUrl("/perfil")).toBe("/api/auth/google?next=%2Fperfil");
+    expect(getGoogleUrl()).toBe("/api/auth/google");
+    expect(getGoogleUrl({ next: "/perfil" })).toBe("/api/auth/google?next=%2Fperfil");
+    expect(getGoogleUrl({ next: "/perfil", link: true })).toBe(
+      "/api/auth/google?next=%2Fperfil&link=1",
+    );
+  });
+
+  it("resets the password with a valid link and refuses an expired one", async () => {
+    expect(await fetchResetToken("abc")).toEqual({ email: "marina@email.com" });
+    expect(await resetPassword({ token: "abc", password: "Senha#1234" })).toEqual({});
+    await expect(fetchResetToken(MOCK_EXPIRED_TOKEN)).rejects.toMatchObject({ status: 410 });
+    await expect(
+      resetPassword({ token: MOCK_EXPIRED_TOKEN, password: "Senha#1234" }),
+    ).rejects.toMatchObject({ status: 410 });
   });
 });

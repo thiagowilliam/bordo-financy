@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { profileKeys } from "@/features/profile";
+import { profileKeys } from "@/features/profile/api/keys";
 
-import { requestPasswordRecovery, signIn, signOut, signUp } from "./client";
+import { requestPasswordRecovery, resetPassword, signIn, signOut, signUp } from "./client";
 import { authKeys } from "./keys";
 
 /** The sign-in answer is the user, so the profile cache starts warm for the app shell. */
@@ -31,3 +31,5 @@ export function useSignOut() {
 
 export const useRequestPasswordRecovery = () =>
   useMutation({ mutationFn: requestPasswordRecovery });
+
+export const useResetPassword = () => useMutation({ mutationFn: resetPassword });

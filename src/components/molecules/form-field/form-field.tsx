@@ -1,5 +1,7 @@
 import { useId } from "react";
 
+import { CircleAlert } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 export type FormFieldControlProps = {
@@ -37,8 +39,14 @@ export function FormField({ label, error, hint, children, className, ...props }:
       {message ? (
         <p
           id={messageId}
-          className={cn("text-[13px]", error ? "text-destructive" : "text-muted-foreground")}
+          className={cn(
+            "text-[13px]",
+            error
+              ? "flex items-center gap-1.5 font-semibold text-destructive-ink"
+              : "text-muted-foreground",
+          )}
         >
+          {error ? <CircleAlert aria-hidden className="size-3.75 shrink-0" /> : null}
           {message}
         </p>
       ) : null}

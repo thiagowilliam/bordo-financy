@@ -2,8 +2,6 @@ import { z } from "zod";
 
 import { SUPPORTED_CURRENCY_CODES } from "@/lib/currencies";
 
-export const authProviderSchema = z.enum(["PASSWORD", "GOOGLE"]);
-
 export const profileSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -12,7 +10,10 @@ export const profileSchema = z.object({
   photoUrl: z.string().nullable(),
   /** Main currency, used to sum trips that were made in different currencies. */
   currency: z.enum(SUPPORTED_CURRENCY_CODES),
-  authProvider: authProviderSchema,
+  /** The account has an e-mail and password way in. A Google-only account can add one later. */
+  hasPassword: z.boolean(),
+  /** E-mail of the connected Google account, or null when Google is not connected. */
+  googleEmail: z.string().nullable(),
   createdAt: z.iso.date(),
 });
 

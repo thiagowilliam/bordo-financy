@@ -58,10 +58,8 @@ export const profileHandlers = [
     return HttpResponse.json({ email: input.data.email });
   }),
 
-  http.post("/api/profile/password-reset", () => {
-    if (db.profile.authProvider !== "PASSWORD") return new HttpResponse(null, { status: 409 });
-    return HttpResponse.json({ email: db.profile.email });
-  }),
+  // Same link for changing a password and for adding one to a Google-only account.
+  http.post("/api/profile/password-reset", () => HttpResponse.json({ email: db.profile.email })),
 
   http.get(
     "/api/profile/export",

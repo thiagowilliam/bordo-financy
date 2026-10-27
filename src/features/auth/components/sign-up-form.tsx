@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { TextField } from "@/components/atoms/text-field";
 import { FormField } from "@/components/molecules/form-field";
 import { PasswordField } from "@/components/molecules/password-field";
+import { authSubmitClassName } from "@/components/templates/auth-card";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api-client";
 
@@ -16,8 +17,13 @@ import { useSignUp } from "../api/mutations";
 import { signUpSchema } from "../schemas/auth.schema";
 import type { SignUpInput } from "../types";
 
+export type SignUpFormProps = {
+  /** Locks the form, e.g. while the Google sign up is under way. */
+  disabled?: boolean;
+};
+
 /** Account creation with email and password. New accounts continue to the onboarding. */
-export function SignUpForm() {
+export function SignUpForm({ disabled }: SignUpFormProps) {
   const router = useRouter();
   const signUp = useSignUp();
   const [formError, setFormError] = useState<string>();
@@ -55,6 +61,7 @@ export function SignUpForm() {
               icon={<Mail />}
               placeholder="voce@email.com"
               autoComplete="email"
+              disabled={disabled}
               {...register("email")}
               {...control}
             />
@@ -65,6 +72,7 @@ export function SignUpForm() {
             <PasswordField
               placeholder="Mínimo de 8 caracteres"
               autoComplete="new-password"
+              disabled={disabled}
               {...register("password")}
               {...control}
             />
@@ -75,6 +83,7 @@ export function SignUpForm() {
             <PasswordField
               placeholder="Repita a senha"
               autoComplete="new-password"
+              disabled={disabled}
               {...register("confirmPassword")}
               {...control}
             />
@@ -86,7 +95,13 @@ export function SignUpForm() {
           </p>
         ) : null}
       </div>
-      <Button type="submit" variant="cta" size="lg" disabled={signUp.isPending} className="w-full">
+      <Button
+        type="submit"
+        variant="cta"
+        size="lg"
+        disabled={disabled || signUp.isPending}
+        className={authSubmitClassName}
+      >
         {signUp.isPending ? "Criando conta..." : "Criar conta"}
       </Button>
     </form>

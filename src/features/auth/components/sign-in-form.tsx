@@ -10,6 +10,7 @@ import { TextField } from "@/components/atoms/text-field";
 import { FormField } from "@/components/molecules/form-field";
 import { PasswordField } from "@/components/molecules/password-field";
 import { AuthFooterLink } from "@/components/templates/auth-card";
+import { authSubmitClassName } from "@/components/templates/auth-card";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api-client";
 import { safeRedirectPath } from "@/lib/auth-routes";
@@ -19,6 +20,8 @@ import { signInSchema } from "../schemas/auth.schema";
 import type { SignInInput } from "../types";
 
 export type SignInFormProps = {
+  /** Locks the form, e.g. while the Google sign in is under way. */
+  disabled?: boolean;
   /** Where to go after signing in, from the `?next=` of the guard redirect. Validated here. */
   next?: string;
 };
@@ -29,7 +32,7 @@ const errorMessage = (error: unknown) =>
     : "Não foi possível entrar. Tente de novo.";
 
 /** Email and password sign in. The session cookie is set by the backend. */
-export function SignInForm({ next }: SignInFormProps) {
+export function SignInForm({ next, disabled }: SignInFormProps) {
   const router = useRouter();
   const signIn = useSignIn();
   const [formError, setFormError] = useState<string>();
@@ -57,6 +60,7 @@ export function SignInForm({ next }: SignInFormProps) {
               icon={<Mail />}
               placeholder="voce@email.com"
               autoComplete="email"
+              disabled={disabled}
               {...register("email")}
               {...control}
             />
@@ -67,6 +71,7 @@ export function SignInForm({ next }: SignInFormProps) {
             <PasswordField
               placeholder="••••••••"
               autoComplete="current-password"
+              disabled={disabled}
               {...register("password")}
               {...control}
             />
@@ -81,7 +86,13 @@ export function SignInForm({ next }: SignInFormProps) {
           </p>
         ) : null}
       </div>
-      <Button type="submit" variant="cta" size="lg" disabled={signIn.isPending} className="w-full">
+      <Button
+        type="submit"
+        variant="cta"
+        size="lg"
+        disabled={disabled || signIn.isPending}
+        className={authSubmitClassName}
+      >
         {signIn.isPending ? "Entrando..." : "Entrar"}
       </Button>
     </form>

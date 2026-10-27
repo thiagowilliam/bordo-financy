@@ -1,6 +1,6 @@
 import type { Profile, ProfileStats } from "@/features/profile";
 
-/** Like the Pencil design: Marina, signed in with e-mail and password. */
+/** Like the Pencil design: Marina, who can sign in with e-mail and password or with Google. */
 export const profileFixture: Profile = {
   id: "user-marina",
   name: "Marina Duarte",
@@ -8,7 +8,8 @@ export const profileFixture: Profile = {
   emailVerified: true,
   photoUrl: null,
   currency: "BRL",
-  authProvider: "PASSWORD",
+  hasPassword: true,
+  googleEmail: "marina@gmail.com",
   createdAt: "2026-03-14",
 };
 

@@ -7,15 +7,20 @@ import { useForm } from "react-hook-form";
 
 import { TextField } from "@/components/atoms/text-field";
 import { FormField } from "@/components/molecules/form-field";
-import { FormNotice } from "@/components/molecules/form-notice";
+import { authSubmitClassName } from "@/components/templates/auth-card";
 import { Button } from "@/components/ui/button";
 
 import { useRequestPasswordRecovery } from "../api/mutations";
 import { forgotPasswordSchema } from "../schemas/auth.schema";
 import type { ForgotPasswordInput } from "../types";
 
-/** Asks for the e-mail and confirms that the recovery link was sent. */
-export function ForgotPasswordForm() {
+export type ForgotPasswordFormProps = {
+  /** Called with the typed e-mail once the link was requested. */
+  onSent: (email: string) => void;
+};
+
+/** Asks for the e-mail and requests the recovery link. */
+export function ForgotPasswordForm({ onSent }: ForgotPasswordFormProps) {
   const recovery = useRequestPasswordRecovery();
   const [formError, setFormError] = useState<string>();
   const {
@@ -27,6 +32,7 @@ export function ForgotPasswordForm() {
   const onSubmit = handleSubmit((values) => {
     setFormError(undefined);
     recovery.mutate(values, {
+      onSuccess: () => onSent(values.email),
       onError: () => setFormError("Não foi possível enviar o link. Tente de novo."),
     });
   });
@@ -46,12 +52,6 @@ export function ForgotPasswordForm() {
             />
           )}
         </FormField>
-        {recovery.isSuccess ? (
-          <FormNotice>
-            Link enviado! Confira sua caixa de entrada em {recovery.data.email}. Pode levar alguns
-            minutos.
-          </FormNotice>
-        ) : null}
         {formError ? (
           <p role="alert" className="text-[13px] font-semibold text-destructive-ink">
             {formError}
@@ -63,7 +63,7 @@ export function ForgotPasswordForm() {
         variant="cta"
         size="lg"
         disabled={recovery.isPending}
-        className="w-full"
+        className={authSubmitClassName}
       >
         <Send aria-hidden />
         {recovery.isPending ? "Enviando..." : "Enviar link"}

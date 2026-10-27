@@ -3,10 +3,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
+import { MOCK_EXPIRED_TOKEN, MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
 import { server } from "@/mocks/server";
 
-import { ForgotPasswordForm } from "./forgot-password-form";
+import { ForgotPasswordScreen } from "./forgot-password-screen";
+import { ResetPasswordScreen } from "./reset-password-screen";
+import { SignInScreen } from "./sign-in-screen";
+import { SignUpScreen } from "./sign-up-screen";
 import { SignInForm } from "./sign-in-form";
 import { SignUpForm } from "./sign-up-form";
 
@@ -94,20 +97,111 @@ describe("SignUpForm", () => {
   });
 });
 
-describe("ForgotPasswordForm", () => {
-  it("confirms where the link was sent", async () => {
-    renderWithClient(<ForgotPasswordForm />);
-    await userEvent.type(screen.getByLabelText("E-mail"), "marina@email.com");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar link" }));
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Link enviado! Confira sua caixa de entrada em marina@email.com.",
+describe("SignInScreen", () => {
+  it("offers Google before the e-mail form", () => {
+    renderWithClient(<SignInScreen />);
+    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Bem-vindo de volta" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("explains a failed Google sign in", () => {
+    renderWithClient(<SignInScreen error="google" />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível entrar com Google. Tente novamente.",
     );
   });
 
+  it("asks for the password when the e-mail already has an account", () => {
+    renderWithClient(<SignInScreen error="account-exists" />);
+    expect(screen.getByRole("alert")).toHaveTextContent("vincular o Google à sua conta");
+  });
+});
+
+describe("SignUpScreen", () => {
+  it("offers Google and links the terms", () => {
+    renderWithClient(<SignUpScreen />);
+    expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos");
+    expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute(
+      "href",
+      "/privacidade",
+    );
+  });
+});
+
+describe("ForgotPasswordScreen", () => {
   it("validates the e-mail", async () => {
-    renderWithClient(<ForgotPasswordForm />);
+    renderWithClient(<ForgotPasswordScreen />);
     await userEvent.type(screen.getByLabelText("E-mail"), "marina@");
     await userEvent.click(screen.getByRole("button", { name: "Enviar link" }));
     expect(await screen.findByText("E-mail inválido")).toBeInTheDocument();
+  });
+
+  it("confirms without revealing if the account exists, and waits to resend", async () => {
+    renderWithClient(<ForgotPasswordScreen />);
+    await userEvent.type(screen.getByLabelText("E-mail"), "marina@email.com");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar link" }));
+
+    expect(await screen.findByRole("heading", { name: "Confira seu e-mail" })).toBeInTheDocument();
+    expect(screen.getByText(/Se existir uma conta com marina@email.com/)).toBeInTheDocument();
+    expect(screen.getByText("Reenviar em 0:45")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "reenviar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar para entrar" })).toHaveAttribute(
+      "href",
+      "/entrar",
+    );
+  });
+});
+
+describe("ResetPasswordScreen", () => {
+  const save = () => screen.getByRole("button", { name: "Salvar nova senha" });
+
+  it("shows the expired state for a spent or missing link", async () => {
+    renderWithClient(<ResetPasswordScreen token={MOCK_EXPIRED_TOKEN} />);
+    expect(await screen.findByRole("heading", { name: "Este link expirou" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Enviar novo link" })).toHaveAttribute(
+      "href",
+      "/recuperar-senha",
+    );
+  });
+
+  it("treats a missing token as expired", () => {
+    renderWithClient(<ResetPasswordScreen />);
+    expect(screen.getByRole("heading", { name: "Este link expirou" })).toBeInTheDocument();
+  });
+
+  it("only saves a strong password that matches the confirmation", async () => {
+    renderWithClient(<ResetPasswordScreen token="abc" />);
+    expect(await screen.findByText("Para a conta marina@email.com")).toBeInTheDocument();
+    expect(save()).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText("Nova senha"), "fraca");
+    await userEvent.type(screen.getByLabelText("Confirmar nova senha"), "fraca");
+    expect(save()).toBeDisabled();
+
+    await userEvent.clear(screen.getByLabelText("Nova senha"));
+    await userEvent.type(screen.getByLabelText("Nova senha"), "Senha#1234");
+    expect(await screen.findByText("As senhas não coincidem.")).toBeInTheDocument();
+    expect(save()).toBeDisabled();
+
+    await userEvent.clear(screen.getByLabelText("Confirmar nova senha"));
+    await userEvent.type(screen.getByLabelText("Confirmar nova senha"), "Senha#1234");
+    await waitFor(() => expect(save()).toBeEnabled());
+  });
+
+  it("confirms the new password and offers to sign in", async () => {
+    renderWithClient(<ResetPasswordScreen token="abc" />);
+    await screen.findByText("Para a conta marina@email.com");
+    await userEvent.type(screen.getByLabelText("Nova senha"), "Senha#1234");
+    await userEvent.type(screen.getByLabelText("Confirmar nova senha"), "Senha#1234");
+    await waitFor(() => expect(save()).toBeEnabled());
+    await userEvent.click(save());
+
+    expect(await screen.findByRole("heading", { name: "Senha atualizada" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar no Bordo" })).toHaveAttribute(
+      "href",
+      "/entrar",
+    );
   });
 });

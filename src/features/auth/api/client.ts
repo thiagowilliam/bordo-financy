@@ -1,7 +1,13 @@
 import { apiFetch } from "@/lib/api-client";
 import { env } from "@/lib/env";
 
-import { authUserSchema, emailSentSchema, signedOutSchema } from "../schemas/auth.schema";
+import {
+  authUserSchema,
+  emailSentSchema,
+  googleRedirectSchema,
+  resetTokenSchema,
+  signedOutSchema,
+} from "../schemas/auth.schema";
 import type { ForgotPasswordInput, SignInInput, SignUpInput } from "../types";
 
 /** The backend sets the httpOnly session cookie on these two. Passwords never touch client state. */
@@ -20,11 +26,33 @@ export const fetchSession = () => apiFetch("/api/auth/session", authUserSchema);
 export const requestPasswordRecovery = ({ email }: ForgotPasswordInput) =>
   apiFetch("/api/auth/forgot-password", emailSentSchema, { method: "POST", body: { email } });
 
+/** Answers `410` when the link expired or was already used. */
+export const fetchResetToken = (token: string) =>
+  apiFetch(`/api/auth/reset-password/${encodeURIComponent(token)}`, resetTokenSchema);
+
+/** Also ends the account's other sessions. */
+export const resetPassword = (input: { token: string; password: string }) =>
+  apiFetch("/api/auth/reset-password", signedOutSchema, { method: "POST", body: input });
+
+type GoogleUrlOptions = {
+  next?: string;
+  /** Connect Google to the signed-in account instead of signing in with it. */
+  link?: boolean;
+};
+
 /**
  * Google sign-in is a full page navigation, not a fetch: the backend redirects to Google, handles
- * the callback, creates the account on the first access and sets the session cookie.
+ * the callback, creates the account on the first access (or links it to the account with the same
+ * verified e-mail) and sets the session cookie. Failures come back to `/entrar?error=...`.
  */
-export const getGoogleSignInUrl = (next?: string) => {
-  const query = next ? `?next=${encodeURIComponent(next)}` : "";
+export function getGoogleUrl({ next, link }: GoogleUrlOptions = {}) {
+  const params = new URLSearchParams();
+  if (next) params.set("next", next);
+  if (link) params.set("link", "1");
+  const query = params.size > 0 ? `?${params}` : "";
   return `${env.apiBaseUrl}/api/auth/google${query}`;
-};
+}
+
+/** Mocks only: MSW cannot answer a navigation, so the redirect is read from a fetch instead. */
+export const fetchMockGoogleRedirect = (options: GoogleUrlOptions) =>
+  apiFetch(getGoogleUrl(options), googleRedirectSchema);

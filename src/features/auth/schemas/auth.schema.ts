@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-import { emailSentSchema, profileSchema } from "@/features/profile";
+import { isStrongPassword } from "@/lib/password-strength";
+
+import { emailSentSchema, profileSchema } from "@/features/profile/schemas/profile.schema";
 
 export const MIN_PASSWORD_LENGTH = 8;
 
@@ -30,3 +32,24 @@ export const authUserSchema = profileSchema;
 export { emailSentSchema };
 
 export const signedOutSchema = z.object({});
+
+/** Reset needs a strong password, unlike sign up, which only asks for the minimum length. */
+export const newPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .refine(isStrongPassword, "Crie uma senha que atenda a todos os requisitos"),
+    confirmPassword: z.string().min(1, "Confirme sua nova senha"),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "As senhas não coincidem.",
+  });
+
+/** What the backend knows about a recovery link: the account it belongs to. */
+export const resetTokenSchema = z.object({ email: z.string() });
+
+/** Where the backend sends the user back to `/entrar` when the Google callback fails. */
+export const googleErrorSchema = z.enum(["google", "account-exists"]);
+
+export const googleRedirectSchema = z.object({ redirectTo: z.string() });

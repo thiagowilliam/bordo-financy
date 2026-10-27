@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { profileFixture } from "@/mocks/fixtures/profile";
 import { server } from "@/mocks/server";
 
 import { fetchProfile } from "../api/client";
@@ -73,10 +74,30 @@ describe("ProfileScreen", () => {
     expect(name).toHaveValue((await fetchProfile()).name);
   });
 
+  it("lists the access methods of the account", async () => {
+    renderScreen();
+    expect(await screen.findByRole("heading", { name: "Métodos de acesso" })).toBeInTheDocument();
+    expect(screen.getByText("Conectado como marina@gmail.com")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Alterar senha" })).toBeInTheDocument();
+  });
+
+  it("offers to add a password and to connect Google when the account has neither", async () => {
+    server.use(
+      http.get("/api/profile", () =>
+        HttpResponse.json({ ...profileFixture, hasPassword: false, googleEmail: null }),
+      ),
+    );
+    renderScreen();
+    expect(await screen.findByRole("button", { name: "Adicionar senha" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Conectar Google" })).toBeInTheDocument();
+  });
+
   it("confirms the password link was sent", async () => {
     renderScreen();
     await userEvent.click(await screen.findByRole("button", { name: "Alterar senha" }));
-    expect(await screen.findByText("Link enviado para marina@email.com")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Enviamos um link para marina@email.com criar sua nova senha."),
+    ).toBeInTheDocument();
   });
 
   it("only deletes the account after typing EXCLUIR", async () => {

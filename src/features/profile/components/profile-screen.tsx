@@ -7,6 +7,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/molecules/page-header";
+import { AccessMethodsSection } from "@/components/organisms/access-methods-section";
 import { ChangeEmailDialog } from "@/components/organisms/change-email-dialog";
 import { DangerZone } from "@/components/organisms/danger-zone";
 import { DataSection } from "@/components/organisms/data-section";
@@ -14,7 +15,6 @@ import { DeleteAccountDialog } from "@/components/organisms/delete-account-dialo
 import { PhotoUploadDialog } from "@/components/organisms/photo-upload-dialog";
 import { ProfileHeaderCard } from "@/components/organisms/profile-header-card";
 import { ProfileInfoSection } from "@/components/organisms/profile-info-section";
-import { SecuritySection } from "@/components/organisms/security-section";
 import { TravelerHistory } from "@/components/organisms/traveler-history";
 import { UnsavedChangesBar } from "@/components/organisms/unsaved-changes-bar";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
   useUpdateProfile,
   useUploadProfilePhoto,
 } from "../api/mutations";
+import { useGoogleAuth } from "@/features/auth/hooks/use-google-auth";
 import { useProfile, useProfileStats } from "../api/queries";
 import { updateProfileSchema } from "../schemas/profile.schema";
 import type { UpdateProfileInput } from "../types";
@@ -68,6 +69,11 @@ export function ProfileScreen() {
   const passwordReset = useRequestPasswordReset();
   const exportExpenses = useExportExpenses();
   const deleteAccount = useDeleteProfile();
+  const googleLink = useGoogleAuth({
+    next: "/perfil",
+    link: true,
+    onError: () => toast.error("Não foi possível conectar o Google. Tente de novo."),
+  });
 
   // `values` keeps the form in sync with the server: it resets (and stops being dirty) after a save.
   const form = useForm<UpdateProfileInput>({
@@ -148,9 +154,12 @@ export function ProfileScreen() {
             onChangeEmail={() => setDialog("email")}
             disabled={updateMutation.isPending}
           />
-          <SecuritySection
-            provider={profile.data.authProvider}
+          <AccessMethodsSection
+            googleEmail={profile.data.googleEmail}
+            hasPassword={profile.data.hasPassword}
             email={profile.data.email}
+            onConnectGoogle={googleLink.start}
+            isConnectingGoogle={googleLink.isPending}
             linkSent={passwordLinkSent}
             isSending={passwordReset.isPending}
             onSendPasswordLink={() =>

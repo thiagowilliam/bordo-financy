@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
 
-import { AuthCard, AuthFooterLink } from "@/components/templates/auth-card";
-import { SignInForm } from "@/features/auth";
+import { googleErrorSchema, SignInScreen } from "@/features/auth";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function EntrarPage({ searchParams }: PageProps<"/entrar">) {
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
   return (
-    <AuthCard
-      title="Entrar no Bordo"
-      description="Continue o diário das suas viagens."
-      footer={
-        <>
-          Ainda não tem conta? <AuthFooterLink href="/criar-conta">Criar conta</AuthFooterLink>
-        </>
-      }
-    >
-      <SignInForm next={typeof next === "string" ? next : undefined} />
-    </AuthCard>
+    <SignInScreen
+      next={typeof next === "string" ? next : undefined}
+      error={googleErrorSchema.safeParse(error).data}
+    />
   );
 }

@@ -42,14 +42,15 @@ Browser ──/api/auth/*──▶ Next (rewrite, same origin) ──▶ Node ba
 
 "user" is the `profileSchema` of `src/features/profile` (`id, name, email, emailVerified, photoUrl, currency, authProvider, createdAt`). Logged-in profile endpoints (`/api/profile/*`) are already specified there, including `POST /api/profile/password-reset` and `POST /api/profile/email-change`.
 
-Password recovery: `forgot-password` e-mails a single-use link (token stored hashed, 1 hour) to a page that sets a new password; that page is a follow-up (`/recuperar-senha/nova`, not designed yet).
+Password recovery: `forgot-password` e-mails a single-use link (token stored hashed, 1 hour) to `/recuperar-senha/nova?token=...`, which first calls `GET /api/auth/reset-password/:token`. The e-mail template is in the Pencil file ("E-mail · Recuperação de senha"). The new password must meet the four rules in `src/lib/password-strength.ts` (8+ characters, upper and lower case, a number, a special character): validate them again in the backend. The "Confira seu e-mail" screen allows resending after 45 seconds; rate limit it server side too.
 
 ## Google and the "pre-registration"
 
 - Authorization code flow handled by the backend (state + PKCE), scopes `openid email profile`.
 - First Google access creates the user with `authProvider: "GOOGLE"`, `emailVerified: true`, name and photo from Google, no password, and lands on `/onboarding`.
-- If a password account with the same verified e-mail exists, link the Google identity to it instead of creating a second user.
-- The UI already handles `authProvider` (`SecuritySection` hides password actions for Google accounts). The login screens in Pencil have no "Continuar com Google" button yet; `getGoogleSignInUrl()` is ready for when it is designed.
+- If a password account with the same verified e-mail exists, do not link silently: send the user to `/entrar?error=account-exists`. Signing in with the password and then connecting Google from the profile (`?link=1`) links it.
+- One account can have both ways in. The profile exposes `hasPassword` and `googleEmail` (null when Google is not connected); a Google-only account adds a password with `POST /api/profile/password-reset`, which e-mails the same single-use link.
+- While mocking, `/api/auth/google` is a fetch answered by MSW with `{ redirectTo }` (a navigation cannot be mocked); the real endpoint is a `302`.
 
 ## Tables (suggested)
 
@@ -63,4 +64,4 @@ Password recovery: `forgot-password` e-mails a single-use link (token stored has
 1. Set `BACKEND_URL` (server) and `NEXT_PUBLIC_API_MOCKING=disabled`.
 2. Replace the `user` fallback of `src/app/(app)/layout.tsx` with a server-side session read if a flash of the fallback name bothers.
 3. Handle a `401` from any query by sending the user to `/entrar?next=...` (a global `QueryCache` `onError`).
-4. Add the Google button and the "new password" page when they are designed.
+4. Terms of use and privacy policy pages (`/termos`, `/privacidade`) are placeholders. Onboarding (`/onboarding`) is not implemented yet.
