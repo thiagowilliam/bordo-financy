@@ -15,14 +15,30 @@ Bordo is a travel finance diary. Users create trips (with photos), register base
 - MSW (API mocks while the backend is not ready)
 - Storybook, Vitest + Testing Library
 - ESLint flat config (no `next lint`), Prettier + prettier-plugin-tailwindcss, Husky + lint-staged + commitlint
-- Package manager: pnpm
+- Package manager: pnpm (workspaces)
+- Backend (planned, see `docs/backend.md`): NestJS + Fastify, Drizzle + PostgreSQL, Redis, Zod
 
 Always check the current official docs before adding or configuring a tool. Do not rely on memory for APIs.
+
+## Monorepo
+
+pnpm workspace with three packages. Run commands from the repo root; `pnpm -r` fans out to every package.
+
+```
+apps/web          Next.js app (everything under "Folder structure" below lives in apps/web/src)
+apps/api          NestJS backend (see docs/backend.md)
+packages/shared   Zod schemas and pure domain helpers shared by web and api (@bordo/shared)
+```
+
+- Import shared code by domain: `@bordo/shared/trips`, `/expenses`, `/base-costs`, `/categories`, `/photos`, `/profile`, `/auth`, `/common` (currencies, password strength).
+- Zod schemas live in `packages/shared/src/<domain>/`, never in `apps/web/src/features/<domain>/schemas`. Types still come from `z.infer` in the feature `types/` folder.
+- `packages/shared` ships TypeScript source (no build step); Turbopack transpiles it. Keep it free of React, Node and browser APIs.
+- Tooling that is repo-wide (Husky, commitlint, lint-staged, Prettier) sits at the root; ESLint, Vitest and TypeScript config live in each package.
 
 ## Commands
 
 ```bash
-pnpm dev          # dev server (Turbopack)
+pnpm dev          # web dev server (Turbopack)
 pnpm build        # production build
 pnpm lint         # ESLint
 pnpm lint:fix
@@ -49,6 +65,8 @@ Before saying a task is done: run `pnpm lint`, `pnpm typecheck` and `pnpm test`.
 
 ## Folder structure (hybrid atomic design)
 
+Paths below are relative to `apps/web/`.
+
 ```
 src/
   app/                     routes only: layouts, pages, loading, error
@@ -67,7 +85,7 @@ src/
     templates/
   features/<domain>/       trips | expenses | base-costs | categories
     api/                   keys.ts, queries.ts, mutations.ts
-    schemas/               Zod schemas (future: packages/shared)
+    (Zod schemas live in packages/shared)
     types/
     components/            domain-aware components
   lib/                     cn, query-client, money/date formatting, env
@@ -107,7 +125,7 @@ Import direction is one way: `ui -> atoms -> molecules -> organisms -> templates
 - Dates via date-fns with the `ptBR` locale.
 - Expense `kind`: `DAILY` (Dia a dia) or `BASE` (Custo de base).
 - Payment methods: `CASH`, `PIX`, `DEBIT`, `CREDIT`, `INTERNATIONAL_CARD`.
-- Zod schemas are the single source for form validation and API types (`z.infer`).
+- Zod schemas (in `@bordo/shared`) are the single source for form validation and API types (`z.infer`), used by both web and api.
 
 ## Design tokens
 
@@ -146,7 +164,7 @@ Other tokens: `muted-foreground` `#5E7275`, `subtle-foreground` `#94A3A5`, `bord
 
 - Conventional Commits, enforced by commitlint. Use the `commit-standardizer` agent or the `commit` skill.
 - Format: `type(scope): subject`, subject in English, imperative, lowercase, no period, max 72 chars.
-- Scopes: `trips`, `expenses`, `base-costs`, `categories`, `auth`, `ui`, `design-system`, `config`, `deps`, `mocks`.
+- Scopes: `trips`, `expenses`, `base-costs`, `categories`, `auth`, `ui`, `design-system`, `config`, `deps`, `mocks`, `api`, `shared`.
 
 ## Agents and skills
 
