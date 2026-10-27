@@ -24,3 +24,14 @@ export function filterPhotoFiles(files: File[], currentCount: number): PhotoFilt
     hasOverflow: valid.length > room,
   };
 }
+
+export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+export const AVATAR_ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+/** True when the file is a JPG, PNG or WEBP of up to 5 MB. */
+export function isValidAvatarFile(file: File): boolean {
+  return (
+    (AVATAR_ACCEPTED_TYPES as readonly string[]).includes(file.type) &&
+    file.size <= AVATAR_MAX_BYTES
+  );
+}

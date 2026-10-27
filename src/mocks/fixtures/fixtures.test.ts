@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { categorySchema } from "@/features/categories";
 import { expenseSchema } from "@/features/expenses";
+import { profileSchema, profileStatsSchema } from "@/features/profile";
 import { tripSchema } from "@/features/trips";
 
 import { categoriesFixture } from "./categories";
@@ -12,6 +13,7 @@ import {
   LISBON_BASE_TOTAL_IN_CENTS,
   LISBON_DAILY_TOTAL_IN_CENTS,
 } from "./expenses";
+import { profileFixture, profileStatsFixture } from "./profile";
 import { tripsFixture } from "./trips";
 
 const sum = (values: { amountInCents: number }[]) =>
@@ -22,6 +24,8 @@ describe("fixtures", () => {
     tripsFixture.forEach((trip) => tripSchema.parse(trip));
     categoriesFixture.forEach((category) => categorySchema.parse(category));
     expensesFixture.forEach((expense) => expenseSchema.parse(expense));
+    profileSchema.parse(profileFixture);
+    profileStatsSchema.parse(profileStatsFixture);
   });
 
   it("add up to the Lisboa & Sintra totals", () => {

@@ -8,8 +8,7 @@ import { cn } from "@/lib/utils";
 const globalItems: SidebarNavItem[] = [
   { href: "/viagens", label: "Minhas viagens", icon: <Luggage />, exact: true },
   { href: "/viagens/nova", label: "Nova viagem", icon: <CirclePlus /> },
-  // No profile route yet: the typed-route cast goes away when it exists.
-  { href: "/perfil" as SidebarNavItem["href"], label: "Perfil", icon: <User /> },
+  { href: "/perfil", label: "Perfil", icon: <User /> },
   { href: "/configuracoes/categorias", label: "Configurações", icon: <Settings /> },
 ];
 
