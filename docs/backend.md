@@ -31,7 +31,9 @@ packages/
 ```
 
 - `@bordo/shared` exposes one entry per domain: `@bordo/shared/trips`, `/expenses`, `/base-costs`, `/categories`, `/photos`, `/profile`, `/auth`, `/common`.
-- It ships TypeScript source. The web app consumes it directly (Turbopack transpiles workspace packages). The API needs a way to run it too: either build the package (for example with `tsdown`) or compile the API with a bundler. Decide in phase 2, when the API gets a build.
+- Two ways to consume it, one source of truth:
+  - **Web** reads the TypeScript source directly through a `paths` alias in `apps/web/tsconfig.json` (`@bordo/shared/*` to `packages/shared/src/*`). No build step, instant HMR.
+  - **API** (ESM, Node) needs real JavaScript. `pnpm --filter @bordo/shared build` runs `tsdown`, which bundles one ESM file plus types per domain into `dist/` and keeps the `exports` map of `package.json` in sync. The API's `predev`, `pretest` and `pretypecheck` scripts run that build for you.
 - Keep it free of React, Node and browser APIs so both sides can import it.
 - Zod stays on the same major version in every package (`zod` is a dependency of `@bordo/shared`, `apps/web` and `apps/api`).
 
@@ -99,11 +101,109 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
 ## Phases
 
 1. **Monorepo foundation.** `apps/web`, `apps/api` (placeholder), `packages/shared` with the schemas extracted. Done: lint, typecheck, tests and build pass from the repo root.
-2. **Nest core.** Env validation, Zod pipe, exception filter, Helmet, global throttler with Redis, `trustProxy`, health check, pino, Dockerfile, CI. Decide how `@bordo/shared` is built for the API.
+2. **Nest core.** Done. Env validation, Zod pipe, exception filter, Helmet, global throttler with Redis, `trustProxy`, health check, pino, Dockerfile, compose and CI. See "Running the API" below.
 3. **Database.** Drizzle schema and migrations, seed from the MSW fixtures, local Postgres and Redis through Docker Compose.
 4. **Auth.** The endpoints in `docs/auth.md`, route-level throttling, Google sign-in with state and PKCE, reset e-mails through BullMQ.
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
 6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
+
+## Running the API
+
+```bash
+pnpm install
+cp apps/api/.env.example apps/api/.env     # optional, every variable has a default in development
+pnpm dev:api                               # http://localhost:3001/api/health
+```
+
+With the shared rate limit storage (Redis):
+
+```bash
+docker compose up -d redis                 # needs Docker (Docker Desktop or OrbStack) running
+# uncomment REDIS_URL in apps/api/.env, then
+pnpm dev:api
+curl localhost:3001/api/health/ready       # redis: up
+```
+
+The production image, as it runs in the cloud (`NODE_ENV=production`, Redis required):
+
+```bash
+docker compose --profile api up --build    # API on http://localhost:3001
+```
+
+Quick manual checks:
+
+```bash
+curl -i localhost:3001/api/health          # Helmet headers + x-request-id
+curl -i localhost:3001/api/nope            # 404 in the standard error shape
+```
+
+The global rate limit has no route to try by hand yet: guards do not run on unknown paths and health is exempt. The tests cover it (limit, `429` shape, `trustProxy`, fail open) and the first real route (phase 4) can be hit with `THROTTLE_LIMIT=3`.
+
+Tests: `pnpm --filter @bordo/api test`. They run the real app through `app.inject` (no network, no Redis needed) and cover health, Helmet, the error shape, Zod validation with a schema from `@bordo/shared`, the JSON content type guard, the global limit, `trustProxy` and the limiter failing open.
+
+## Environment
+
+Validated with Zod at boot (`src/config/env.ts`). The process exits with every problem listed. A `.env` file in `apps/api` is read outside production; real variables win.
+
+| Variable          | Default           | Notes                                                                                        |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------------- |
+| `NODE_ENV`        | `development`     | `production` turns off pretty logs and makes `REDIS_URL` mandatory                           |
+| `PORT`, `HOST`    | `3001`, `0.0.0.0` |                                                                                              |
+| `LOG_LEVEL`       | `info`            | `silent` in tests                                                                            |
+| `REDIS_URL`       | none              | Rate limit storage and readiness check. Without it the limit is in memory (one process only) |
+| `TRUST_PROXY`     | none              | Addresses or CIDRs of the proxies in front of the API, comma separated. Never a number       |
+| `THROTTLE_TTL_MS` | `60000`           | Window of the global limit                                                                   |
+| `THROTTLE_LIMIT`  | `120`             | Requests per window per client IP                                                            |
+
+## What is in place
+
+- `GET /api/health` (liveness, never rate limited, not logged) and `GET /api/health/ready` (checks Redis, `503` with the failing dependency when down).
+- Every error has the same shape: `{ statusCode, error, message, issues?, requestId }`. Unexpected errors never leak their message. Validation errors list the failing `path` of each field, with the pt-BR messages from the shared schemas.
+- `x-request-id` is kept when the caller sends a sane one, generated otherwise, and shows up in the header, the logs and the error body.
+- The global limit is a guard that fails open: if Redis breaks, traffic keeps flowing and the failure is logged. Sign-in and the other sensitive routes must not fail open, so phase 4 gives them their own strict guard.
+- Mutations with a body must send `application/json` (`415` otherwise).
+- Logs are JSON in production and pretty in development. `authorization`, `cookie` and `set-cookie` are redacted.
+- Not done yet, by design: auth guard and `@Public()` (phase 4), database (phase 3), Swagger (after the first domain).
+
+## Where we stopped
+
+Last updated 2026-10-27. Phases 1 and 2 are done and committed on the branch `chore/monorepo` (not pushed, no PR yet). Next is phase 3.
+
+### Still to verify (needs Docker or GitHub)
+
+- [ ] `docker compose up -d redis`, set `REDIS_URL`, and confirm `GET /api/health/ready` reports `redis: up`. The Redis rate limit storage has only been exercised against a dead Redis so far.
+- [ ] `docker build -f apps/api/Dockerfile -t bordo-api .` and `docker compose --profile api up --build`. Only the pnpm steps and the deployed artifact were run by hand.
+- [ ] First run of `.github/workflows/ci.yml` after pushing.
+- [ ] Open the PR for `chore/monorepo` and merge it before starting phase 3.
+
+### Phase 3 plan (database)
+
+1. Check the current Drizzle docs (Context7) before installing: `drizzle-orm`, `drizzle-kit`, and the Postgres driver (`postgres` or `pg`).
+2. Add a `postgres` service to `compose.yaml` with a healthcheck, and `DATABASE_URL` to the env schema (`src/config/env.ts`, required in production) and to `.env.example`.
+3. Create `src/database/` with a Nest provider for the Drizzle client (closed on shutdown), the schema, migrations and a seed script built from `apps/web/src/mocks/fixtures`.
+4. Schema first for auth (`users`, `sessions`, `oauth_accounts`, `password_reset_tokens`), then the domain tables listed under "Data model". Money stays integer cents plus a 3 letter currency code.
+5. Add a Postgres health indicator next to `RedisHealthIndicator` in `/api/health/ready`.
+6. Integration tests against a real Postgres (compose or a CI service container). Decide whether the API test suite starts its own database.
+
+Open decisions for phase 3: id strategy (uuid v7 or bigint), Postgres version, and whether migrations run on boot or as a separate deploy step (recommended: separate step).
+
+### Phase 4 reminders (auth)
+
+- Give sign-in, sign-up, forgot and reset password a strict guard that **fails closed** (the global one fails open), keyed by IP and by e-mail.
+- Add the global auth guard and the `@Public()` decorator. Health stays public.
+- Argon2id needs a native build: check the prebuilt binaries for `node:22-slim` in the Dockerfile.
+- The first real route also allows trying the rate limit by hand with `THROTTLE_LIMIT=3`.
+
+### Gotchas learned
+
+- Node is not on the PATH in some shells (nvm not loaded). Use Node 22: `export PATH=$HOME/.nvm/versions/node/v22.21.0/bin:$PATH`.
+- API source is ESM under `nodenext`: relative imports need the `.js` extension.
+- `ConfigModule.forRoot` validates the environment when `app.module.ts` is imported. Tests therefore call `vi.resetModules()` and import the app fresh for each env (`test/helpers/create-test-app.ts`).
+- Guards do not run on routes that do not exist, so a `404` is never rate limited.
+- pnpm 10 needs `pnpm deploy --legacy` (already in the Dockerfile).
+- `nestjs-zod` and `@nest-lab/throttler-storage-redis` do not declare Nest 12 peers yet. They are allowed in `pnpm-workspace.yaml` under `peerDependencyRules`. Remove those entries when they publish support.
+- `ioredis` is pinned to the 5.x line, which is what the Redis throttler storage was tested with.
+- Without `NODE_ENV=production` the API uses `pino-pretty`, a dev dependency that is not in the image. The Dockerfile sets `NODE_ENV=production`.
 
 ## Conventions
 

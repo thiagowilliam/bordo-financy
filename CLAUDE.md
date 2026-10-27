@@ -32,13 +32,14 @@ packages/shared   Zod schemas and pure domain helpers shared by web and api (@bo
 
 - Import shared code by domain: `@bordo/shared/trips`, `/expenses`, `/base-costs`, `/categories`, `/photos`, `/profile`, `/auth`, `/common` (currencies, password strength).
 - Zod schemas live in `packages/shared/src/<domain>/`, never in `apps/web/src/features/<domain>/schemas`. Types still come from `z.infer` in the feature `types/` folder.
-- `packages/shared` ships TypeScript source (no build step); Turbopack transpiles it. Keep it free of React, Node and browser APIs.
+- Web reads `packages/shared` source through a `paths` alias (no build). The API consumes the `tsdown` build in `packages/shared/dist` (its scripts build it first). Keep the package free of React, Node and browser APIs.
 - Tooling that is repo-wide (Husky, commitlint, lint-staged, Prettier) sits at the root; ESLint, Vitest and TypeScript config live in each package.
 
 ## Commands
 
 ```bash
 pnpm dev          # web dev server (Turbopack)
+pnpm dev:api      # API dev server (see docs/backend.md for Redis and Docker)
 pnpm build        # production build
 pnpm lint         # ESLint
 pnpm lint:fix
