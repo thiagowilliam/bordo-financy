@@ -139,6 +139,7 @@ Other tokens: `muted-foreground` `#5E7275`, `subtle-foreground` `#94A3A5`, `bord
 - Client components that receive icons from a Server Component take rendered elements (`icon: <MapPin />`), not component references.
 - Vitest config is `vitest.config.mts` (`resolve.tsconfigPaths`). Testing Library cleanup runs in `vitest.setup.ts`.
 - `pnpm typecheck` runs `next typegen` first so `PageProps`/`LayoutProps` exist.
+- Auth: the Node backend owns users and sessions (httpOnly cookie `bordo_session`); Next only has the screens and the optimistic guard in `src/proxy.ts` (skipped while mocking). Contract and flow in `docs/auth.md`.
 - Storybook 10 with `@storybook/nextjs-vite`, stories colocated with components, `.storybook/preview.tsx` loads `globals.css` and Figtree.
 
 ## Git
