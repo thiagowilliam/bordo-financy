@@ -15,6 +15,8 @@ const config = {
         "config",
         "deps",
         "mocks",
+        "api",
+        "shared",
       ],
     ],
     "subject-case": [2, "always", "lower-case"],

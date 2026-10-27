@@ -1,0 +1,19 @@
+import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import helmet from "@fastify/helmet";
+import { Logger } from "nestjs-pino";
+
+export const API_PREFIX = "api";
+
+/** Everything main.ts and the e2e tests must share, so tests exercise the real setup. */
+export async function configureApp(app: NestFastifyApplication) {
+  app.useLogger(app.get(Logger));
+  app.setGlobalPrefix(API_PREFIX);
+  await app.register(helmet);
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook("onRequest", async (request, reply) => {
+      reply.header("x-request-id", request.id);
+    });
+  app.enableShutdownHooks();
+}

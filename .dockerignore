@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.husky
+.claude
+docs
+**/*.log
+**/*.tsbuildinfo
+# The web app is not part of the API image; only its manifest is needed for the lockfile.
+apps/web/*
+!apps/web/package.json

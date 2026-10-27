@@ -2,5 +2,6 @@
 node_modules
 pnpm-lock.yaml
 storybook-static
-public/mockServiceWorker.js
-src/components/ui
+dist
+apps/web/public/mockServiceWorker.js
+apps/web/src/components/ui
