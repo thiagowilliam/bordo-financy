@@ -99,7 +99,7 @@ function ChangeEmailForm({
         )}
       </FormField>
 
-      <div className="flex items-start gap-2.5 rounded-lg bg-primary-soft px-3.5 py-3 text-[13px] leading-5 text-primary-strong">
+      <div className="flex items-start gap-2.5 rounded-xl bg-primary-soft px-3.5 py-3 text-[13px] leading-5 font-medium text-primary-strong">
         <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
           Enviaremos um link de confirmação para o novo endereço. Até confirmar, você continua

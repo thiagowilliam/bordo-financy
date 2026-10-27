@@ -71,7 +71,7 @@ function DeleteAccountForm({
         <DialogTitle className="text-xl leading-tight font-bold tracking-[-0.3px] text-foreground md:text-[22px]">
           Excluir sua conta?
         </DialogTitle>
-        <DialogDescription className="text-sm text-muted-foreground">
+        <DialogDescription className="text-[15px] text-muted-foreground">
           Esta ação é permanente e não pode ser desfeita. Vamos apagar:
         </DialogDescription>
       </div>
@@ -79,15 +79,15 @@ function DeleteAccountForm({
       <ul className="flex flex-col gap-2.5">
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
-            <X aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive-ink" />
+            <Check aria-hidden className="mt-0.5 size-3.5 shrink-0 text-destructive-ink" />
             {item}
           </li>
         ))}
       </ul>
 
-      <div className="flex items-center gap-3 rounded-lg bg-secondary px-3.5 py-3">
+      <div className="flex items-center gap-3 rounded-[14px] bg-background px-3.5 py-3">
         <Download aria-hidden className="size-4.5 shrink-0 text-muted-foreground" />
-        <span className="flex-1 text-[13px] text-muted-foreground">
+        <span className="flex-1 text-sm font-semibold text-foreground">
           Quer exportar seus dados antes?
         </span>
         <Button
@@ -95,7 +95,7 @@ function DeleteAccountForm({
           variant="ghost"
           disabled={isExporting || isPending}
           onClick={onExport}
-          className="h-auto px-2 py-1 text-[13px] font-bold text-primary"
+          className="h-auto px-2 py-1 text-sm font-bold text-primary"
         >
           {isExporting ? "Exportando..." : "Exportar CSV"}
         </Button>

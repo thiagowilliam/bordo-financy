@@ -151,10 +151,12 @@ function PhotoUploadForm({
             key={chosen.url}
             src={chosen.url}
             onCropChange={setCrop}
-            className="w-full md:w-72 md:shrink-0"
+            className="w-full md:w-75 md:shrink-0"
           />
           <div className="flex min-w-0 flex-1 flex-col items-center gap-3.5 md:items-start">
-            <span className="text-xs font-bold tracking-[0.8px] text-muted-foreground">PRÉVIA</span>
+            <span className="text-[11px] font-bold tracking-[0.8px] text-subtle-foreground">
+              PRÉVIA
+            </span>
             <CropPreview src={chosen.url} crop={crop} className="size-28" />
             <div className="flex items-center gap-2.5">
               <CropPreview src={chosen.url} crop={crop} className="size-10" />
@@ -182,9 +184,7 @@ function PhotoUploadForm({
             isDragging && "border-solid bg-primary-soft/60",
           )}
         >
-          <span className="text-[15px] font-bold text-primary-strong md:text-base">
-            Arraste uma imagem aqui
-          </span>
+          <span className="text-[17px] font-bold text-foreground">Arraste uma imagem aqui</span>
           <span className="text-[13px] text-muted-foreground">ou</span>
           <Button
             type="button"
@@ -195,7 +195,7 @@ function PhotoUploadForm({
           >
             Escolher arquivo
           </Button>
-          <span className="text-xs text-muted-foreground">JPG, PNG ou WEBP, até 5 MB</span>
+          <span className="text-[13px] text-muted-foreground">JPG, PNG ou WEBP, até 5 MB</span>
         </div>
       )}
 

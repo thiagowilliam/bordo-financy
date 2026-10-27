@@ -26,7 +26,7 @@ export function ProfileHeaderCard({
     <section
       aria-label="Perfil"
       className={cn(
-        "flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-5 text-center md:flex-row md:gap-6 md:p-7 md:text-left",
+        "flex items-center gap-4.5 rounded-xl border border-border bg-card p-5 md:gap-6 md:p-7",
         className,
       )}
       {...props}
@@ -37,18 +37,18 @@ export function ProfileHeaderCard({
           type="button"
           onClick={onChangePhoto}
           aria-label="Trocar foto"
-          className="absolute right-0 bottom-0 flex size-9.5 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground outline-none hover:bg-primary-strong focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="absolute right-0 bottom-0 flex size-9 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground outline-none hover:bg-primary-strong focus-visible:ring-3 focus-visible:ring-ring/50 md:size-9.5"
         >
           <Camera aria-hidden className="size-4.5" />
         </button>
       </div>
-      <div className="flex min-w-0 flex-col items-center gap-1 md:items-start">
-        <h2 className="max-w-full truncate text-[22px] font-bold text-foreground md:text-[26px]">
+      <div className="flex min-w-0 flex-col items-start gap-1">
+        <h2 className="max-w-full truncate text-[21px] font-bold text-foreground md:text-[26px]">
           {name}
         </h2>
-        <p className="max-w-full truncate text-[15px] text-muted-foreground">{email}</p>
-        <p className="mt-1 flex items-center gap-1.5 text-[13px] text-muted-foreground">
-          <CalendarDays aria-hidden className="size-3.5.5 size-4" />
+        <p className="max-w-full truncate text-sm text-muted-foreground md:text-[15px]">{email}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground md:text-[13px]">
+          <CalendarDays aria-hidden className="size-3.5 md:size-3.75" />
           No Bordo desde {memberSince}
         </p>
       </div>

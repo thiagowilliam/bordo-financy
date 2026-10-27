@@ -29,7 +29,7 @@ export function UnsavedChangesBar({
       )}
       {...props}
     >
-      <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+      <p className="flex items-center gap-2.5 text-[15px] font-semibold text-foreground">
         <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-warning" />
         Alterações não salvas
       </p>

@@ -15,12 +15,12 @@ export function DataSection({ onExport, isExporting, className, ...props }: Data
     <section
       aria-labelledby="data-section-title"
       className={cn(
-        "flex flex-col gap-5 rounded-xl border border-border bg-card p-5 md:p-7",
+        "flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:gap-5 md:p-7",
         className,
       )}
       {...props}
     >
-      <h2 id="data-section-title" className="text-lg font-bold text-foreground">
+      <h2 id="data-section-title" className="text-[17px] font-bold text-foreground md:text-lg">
         Seus dados
       </h2>
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -33,7 +33,7 @@ export function DataSection({ onExport, isExporting, className, ...props }: Data
           variant="outline"
           onClick={onExport}
           disabled={isExporting}
-          className="h-auto shrink-0 px-4 py-2.5 font-semibold"
+          className="h-auto w-full shrink-0 justify-center px-4 py-2.5 font-semibold md:w-auto"
         >
           <Download aria-hidden />
           {isExporting ? "Exportando..." : "Exportar"}
@@ -42,7 +42,7 @@ export function DataSection({ onExport, isExporting, className, ...props }: Data
       <hr className="border-border" />
       <Link
         href="/configuracoes/categorias"
-        className="flex items-center gap-3 rounded-lg text-sm text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex items-center gap-3 rounded-lg text-[13px] text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
       >
         <Settings aria-hidden className="size-4.5 shrink-0 text-subtle-foreground" />
         <span className="flex-1">

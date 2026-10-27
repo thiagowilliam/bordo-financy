@@ -37,12 +37,12 @@ export function ProfileInfoSection({
     <section
       aria-labelledby="profile-info-title"
       className={cn(
-        "flex flex-col gap-5 rounded-xl border border-border bg-card p-5 md:p-7",
+        "flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:gap-5 md:p-7",
         className,
       )}
       {...props}
     >
-      <h2 id="profile-info-title" className="text-lg font-bold text-foreground">
+      <h2 id="profile-info-title" className="text-[17px] font-bold text-foreground md:text-lg">
         Informações pessoais
       </h2>
       <div className="grid gap-5 md:grid-cols-2">

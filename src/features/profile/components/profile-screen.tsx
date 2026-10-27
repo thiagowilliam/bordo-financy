@@ -161,7 +161,7 @@ export function ProfileScreen() {
             }
           />
           <DataSection onExport={handleExport} isExporting={exportExpenses.isPending} />
-          <DangerZone onDelete={() => setDialog("delete")} />
+          <DangerZone className="mt-4 md:mt-7" onDelete={() => setDialog("delete")} />
 
           <UnsavedChangesBar
             visible={isDirty}

@@ -13,7 +13,7 @@ export function DangerZone({ onDelete, className, ...props }: DangerZoneProps) {
     <section
       aria-labelledby="danger-zone-title"
       className={cn(
-        "flex flex-col gap-4 rounded-xl border border-destructive/30 bg-card p-5 md:p-7",
+        "flex flex-col gap-3.5 rounded-xl border border-destructive/30 bg-card p-5 md:gap-4 md:p-7",
         className,
       )}
       {...props}
@@ -35,7 +35,7 @@ export function DangerZone({ onDelete, className, ...props }: DangerZoneProps) {
           type="button"
           variant="outline"
           onClick={onDelete}
-          className="h-auto shrink-0 border-destructive/40 bg-card px-4 py-2.5 font-semibold text-destructive-ink hover:bg-destructive-soft hover:text-destructive-ink"
+          className="h-auto w-full shrink-0 justify-center border-destructive/40 bg-card px-4 py-3 text-[15px] font-semibold text-destructive-ink hover:bg-destructive-soft hover:text-destructive-ink md:w-auto md:py-2.5 md:text-sm"
         >
           <Trash2 aria-hidden />
           Excluir conta

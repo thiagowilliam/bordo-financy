@@ -9,7 +9,7 @@ const avatarVariants = cva(
       size: {
         md: "size-9.5 text-[15px]",
         lg: "size-10 text-base",
-        profile: "size-24 text-[34px]",
+        profile: "size-20 text-[28px] md:size-24 md:text-[34px]",
       },
     },
     defaultVariants: { size: "md" },

@@ -25,19 +25,19 @@ export function SecuritySection({
     <section
       aria-labelledby="security-title"
       className={cn(
-        "flex flex-col gap-5 rounded-xl border border-border bg-card p-5 md:p-7",
+        "flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:gap-5 md:p-7",
         className,
       )}
       {...props}
     >
-      <h2 id="security-title" className="text-lg font-bold text-foreground">
+      <h2 id="security-title" className="text-[17px] font-bold text-foreground md:text-lg">
         Segurança
       </h2>
       {provider === "GOOGLE" ? (
         <div className="flex items-center gap-3.5">
           <span
             aria-hidden="true"
-            className="flex size-10.5 shrink-0 items-center justify-center rounded-xl bg-background text-lg font-bold text-foreground"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-lg font-bold text-foreground"
           >
             G
           </span>
@@ -62,7 +62,7 @@ export function SecuritySection({
               variant="outline"
               onClick={onSendPasswordLink}
               disabled={isSending}
-              className="h-auto shrink-0 px-4 py-2.5 font-semibold"
+              className="h-auto w-full shrink-0 justify-center px-4 py-2.5 font-semibold md:w-auto"
             >
               <KeyRound aria-hidden />
               {isSending ? "Enviando..." : linkSent ? "Reenviar link" : "Alterar senha"}
@@ -71,7 +71,7 @@ export function SecuritySection({
           {linkSent ? (
             <p
               role="status"
-              className="flex items-center gap-2 rounded-lg bg-success-soft px-3.5 py-3 text-sm font-medium text-success-ink"
+              className="flex items-center gap-2 rounded-xl bg-success-soft px-3.5 py-3 text-sm font-semibold text-success-ink"
             >
               <Check aria-hidden className="size-4 shrink-0" />
               Link enviado para {email}
