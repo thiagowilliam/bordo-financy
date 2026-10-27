@@ -22,3 +22,16 @@ describe("TextField", () => {
     expect(screen.getByRole("textbox")).toBeInvalid();
   });
 });
+
+describe("TextField trailing slot", () => {
+  it("renders the trailing element", () => {
+    render(<TextField aria-label="Destino" trailing={<button type="button">Limpar</button>} />);
+    expect(screen.getByRole("button", { name: "Limpar" })).toBeInTheDocument();
+  });
+
+  it("forwards the ref to the input", () => {
+    const ref = { current: null as HTMLInputElement | null };
+    render(<TextField aria-label="Destino" ref={ref} />);
+    expect(ref.current).toBe(screen.getByRole("textbox"));
+  });
+});

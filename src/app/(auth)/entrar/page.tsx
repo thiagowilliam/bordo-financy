@@ -1,9 +1,23 @@
-import { PagePlaceholder } from "@/components/molecules/page-placeholder";
+import type { Metadata } from "next";
 
-export default function EntrarPage() {
+import { AuthCard, AuthFooterLink } from "@/components/templates/auth-card";
+import { SignInForm } from "@/features/auth";
+
+export const metadata: Metadata = { title: "Entrar" };
+
+export default async function EntrarPage({ searchParams }: PageProps<"/entrar">) {
+  const { next } = await searchParams;
   return (
-    <main className="flex flex-1 flex-col">
-      <PagePlaceholder title="Entrar" description="Login em construção." />
-    </main>
+    <AuthCard
+      title="Entrar no Bordo"
+      description="Continue o diário das suas viagens."
+      footer={
+        <>
+          Ainda não tem conta? <AuthFooterLink href="/criar-conta">Criar conta</AuthFooterLink>
+        </>
+      }
+    >
+      <SignInForm next={typeof next === "string" ? next : undefined} />
+    </AuthCard>
   );
 }

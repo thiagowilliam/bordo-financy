@@ -7,12 +7,20 @@ export const fieldControlClassName =
 export type TextFieldProps = React.ComponentProps<"input"> & {
   /** Rendered icon shown at the start of the field, e.g. `<MapPin />`. Decorative. */
   icon?: React.ReactNode;
+  /** Interactive element shown at the end of the field, e.g. a toggle button. */
+  trailing?: React.ReactNode;
   /** Classes for the wrapper around the input. */
   wrapperClassName?: string;
 };
 
 /** Text input with an optional decorative leading icon. */
-export function TextField({ icon, className, wrapperClassName, ...props }: TextFieldProps) {
+export function TextField({
+  icon,
+  trailing,
+  className,
+  wrapperClassName,
+  ...props
+}: TextFieldProps) {
   return (
     <div className={cn("relative", wrapperClassName)}>
       {icon ? (
@@ -23,7 +31,13 @@ export function TextField({ icon, className, wrapperClassName, ...props }: TextF
           {icon}
         </span>
       ) : null}
-      <Input className={cn(fieldControlClassName, icon && "pl-11.5", className)} {...props} />
+      <Input
+        className={cn(fieldControlClassName, icon && "pl-11.5", trailing && "pr-12", className)}
+        {...props}
+      />
+      {trailing ? (
+        <span className="absolute inset-y-0 right-1.5 flex items-center">{trailing}</span>
+      ) : null}
     </div>
   );
 }
