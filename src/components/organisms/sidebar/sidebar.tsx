@@ -13,7 +13,7 @@ const globalItems: SidebarNavItem[] = [
 ];
 
 export type SidebarProps = Omit<React.ComponentProps<"div">, "children"> & {
-  user: { name: string; email: string };
+  user: { name: string; email: string; photoUrl?: string | null };
   /** Trip menu shown below the global menu while a trip is open. */
   tripMenu?: React.ReactNode;
 };
@@ -33,7 +33,7 @@ export function Sidebar({ user, tripMenu, className, ...props }: SidebarProps) {
         <SidebarNav items={globalItems} />
         {tripMenu}
       </div>
-      <UserCard className="shrink-0" name={user.name} email={user.email} />
+      <UserCard className="shrink-0" name={user.name} email={user.email} photoUrl={user.photoUrl} />
     </div>
   );
 }

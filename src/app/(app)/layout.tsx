@@ -1,18 +1,17 @@
-import { MobileTopBar } from "@/components/organisms/mobile-top-bar";
-import { Sidebar } from "@/components/organisms/sidebar";
 import { AppShell } from "@/components/templates/app-shell";
 import { ExpenseDrawer } from "@/features/expenses";
+import { ProfileMobileTopBar, ProfileSidebar } from "@/features/profile";
 import { TripMobileNav, TripSidebarMenu } from "@/features/trips";
 
-// Static mock until auth exists.
-const user = { name: "Marina", email: "marina@email.com" };
+// Shown until the profile loads. Static until auth exists.
+const fallbackUser = { name: "Marina", email: "marina@email.com" };
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <AppShell
-        sidebar={<Sidebar user={user} tripMenu={<TripSidebarMenu />} />}
-        mobileHeader={<MobileTopBar userName={user.name} />}
+        sidebar={<ProfileSidebar fallbackUser={fallbackUser} tripMenu={<TripSidebarMenu />} />}
+        mobileHeader={<ProfileMobileTopBar fallbackName={fallbackUser.name} />}
         mobileNav={<TripMobileNav />}
       >
         {children}
