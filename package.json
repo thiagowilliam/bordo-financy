@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "storybook": "pnpm --filter @bordo/web storybook",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:api": "pnpm --filter @bordo/api dev"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",

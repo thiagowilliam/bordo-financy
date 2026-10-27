@@ -4,14 +4,13 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "exports": {
-    "./*": "./src/*/index.ts"
-  },
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "tsdown",
+    "dev": "tsdown --watch"
   },
   "dependencies": {
     "zod": "^4.6.7"
@@ -19,8 +18,23 @@
   "devDependencies": {
     "@types/node": "^20",
     "eslint": "^9",
+    "tsdown": "^0.23.2",
     "typescript": "^5",
     "typescript-eslint": "^8",
     "vitest": "^5.0.5"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./auth": "./dist/auth.mjs",
+    "./base-costs": "./dist/base-costs.mjs",
+    "./categories": "./dist/categories.mjs",
+    "./common": "./dist/common.mjs",
+    "./expenses": "./dist/expenses.mjs",
+    "./photos": "./dist/photos.mjs",
+    "./profile": "./dist/profile.mjs",
+    "./trips": "./dist/trips.mjs",
+    "./package.json": "./package.json"
   }
 }

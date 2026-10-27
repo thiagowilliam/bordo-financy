@@ -5,3 +5,10 @@ packages:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# nestjs-zod and the Redis throttler storage have not widened their @nestjs/* peer range to v12 yet
+peerDependencyRules:
+  allowedVersions:
+    "nestjs-zod>@nestjs/common": "12"
+    "@nest-lab/throttler-storage-redis>@nestjs/common": "12"
+    "@nest-lab/throttler-storage-redis>@nestjs/core": "12"
