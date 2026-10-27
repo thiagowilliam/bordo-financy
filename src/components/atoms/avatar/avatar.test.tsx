@@ -35,4 +35,9 @@ describe("Avatar", () => {
     const { container } = render(<Avatar name="Marina" size="profile" />);
     expect(container.firstChild).toHaveClass("size-20", "md:size-24");
   });
+
+  it("applies the xl size", () => {
+    const { container } = render(<Avatar name="Marina" size="xl" />);
+    expect(container.firstChild).toHaveClass("size-18");
+  });
 });

@@ -1,9 +1,9 @@
-import { PagePlaceholder } from "@/components/molecules/page-placeholder";
+import type { Metadata } from "next";
+
+import { OnboardingScreen } from "@/features/profile";
+
+export const metadata: Metadata = { title: "Boas-vindas" };
 
 export default function OnboardingPage() {
-  return (
-    <main className="flex flex-1 flex-col">
-      <PagePlaceholder title="Boas-vindas ao Bordo" description="Onboarding em construção." />
-    </main>
-  );
+  return <OnboardingScreen />;
 }

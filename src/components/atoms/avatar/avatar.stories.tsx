@@ -16,6 +16,8 @@ export const Default: Story = {};
 
 export const Large: Story = { args: { size: "lg" } };
 
+export const ExtraLarge: Story = { args: { size: "xl" } };
+
 export const Profile: Story = { args: { size: "profile" } };
 
 export const WithPhoto: Story = {
