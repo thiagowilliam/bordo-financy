@@ -66,7 +66,7 @@ describe.skipIf(!databaseUrl)("profile (real Postgres)", () => {
     }[] = [],
   ) {
     const [{ id: categoryId }] = await sql`
-      insert into categories (name, icon, color, kind) values ('Alimentação', 'utensils', 1, 'DAILY') returning id`;
+      insert into categories (user_id, name, icon, color, kind) values (${userId}, 'Alimentação', 'utensils', 1, 'DAILY') returning id`;
     const [{ id: tripId }] = await sql`
       insert into trips (user_id, name, destination, start_date, end_date, currency, budget_cents)
       values (${userId}, ${trip.name}, ${trip.destination}, ${trip.start}, ${trip.end}, ${trip.currency}, 100000)

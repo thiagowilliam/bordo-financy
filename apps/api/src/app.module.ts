@@ -16,6 +16,7 @@ import { type Env, validateEnv } from "./config/env.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { AuthGuard } from "./modules/auth/auth.guard.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
+import { CategoriesModule } from "./modules/categories/categories.module.js";
 import { ProfileModule } from "./modules/profile/profile.module.js";
 import { HealthModule } from "./health/health.module.js";
 
@@ -81,6 +82,7 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
     HealthModule,
     AuthModule,
     ProfileModule,
+    CategoriesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
