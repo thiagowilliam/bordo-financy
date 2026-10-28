@@ -16,10 +16,20 @@ describe("validateEnv", () => {
   });
 
   it("requires REDIS_URL in production", () => {
-    expect(() => validateEnv({ NODE_ENV: "production" })).toThrow(/REDIS_URL/);
-    expect(validateEnv({ NODE_ENV: "production", REDIS_URL: "redis://redis:6379" }).REDIS_URL).toBe(
+    const production = { NODE_ENV: "production", DATABASE_URL: "postgres://u:p@db:5432/bordo" };
+    expect(() => validateEnv(production)).toThrow(/REDIS_URL/);
+    expect(validateEnv({ ...production, REDIS_URL: "redis://redis:6379" }).REDIS_URL).toBe(
       "redis://redis:6379",
     );
+  });
+
+  it("requires DATABASE_URL in production", () => {
+    const production = { NODE_ENV: "production", REDIS_URL: "redis://redis:6379" };
+    expect(() => validateEnv(production)).toThrow(/DATABASE_URL/);
+    expect(
+      validateEnv({ ...production, DATABASE_URL: "postgres://u:p@db:5432/bordo" }).DATABASE_URL,
+    ).toBe("postgres://u:p@db:5432/bordo");
+    expect(validateEnv({ DATABASE_URL: "" }).DATABASE_URL).toBeUndefined();
   });
 
   it("rejects invalid values with every problem listed", () => {

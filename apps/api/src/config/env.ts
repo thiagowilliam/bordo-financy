@@ -28,6 +28,8 @@ export const envSchema = z
       .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
       .default("info"),
     REDIS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+    DATABASE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
     TRUST_PROXY: z.preprocess(emptyToUndefined, z.string().optional()),
     THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
@@ -38,6 +40,13 @@ export const envSchema = z
         code: "custom",
         path: ["REDIS_URL"],
         message: "REDIS_URL is required in production so rate limits are shared by every instance",
+      });
+    }
+    if (env.NODE_ENV === "production" && !env.DATABASE_URL) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["DATABASE_URL"],
+        message: "DATABASE_URL is required in production",
       });
     }
     try {

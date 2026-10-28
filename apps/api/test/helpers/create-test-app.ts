@@ -48,7 +48,13 @@ export async function createTestApp(
   customize: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
 ) {
   // ConfigModule validates process.env when AppModule is imported, so set it and import fresh each time.
-  for (const key of ["REDIS_URL", "TRUST_PROXY", "THROTTLE_LIMIT", "THROTTLE_TTL_MS"])
+  for (const key of [
+    "REDIS_URL",
+    "DATABASE_URL",
+    "TRUST_PROXY",
+    "THROTTLE_LIMIT",
+    "THROTTLE_TTL_MS",
+  ])
     delete process.env[key];
   Object.assign(process.env, baseEnv, env);
   vi.resetModules();

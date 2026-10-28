@@ -21,6 +21,15 @@ describe("health", () => {
     const ready = await app.inject({ url: "/api/health/ready" });
     expect(ready.statusCode).toBe(200);
     expect(ready.json().info.redis).toMatchObject({ status: "up", configured: false });
+    expect(ready.json().info.database).toMatchObject({ status: "up", configured: false });
+  });
+
+  it("reports not ready when Postgres is unreachable", async () => {
+    app = await createTestApp({ DATABASE_URL: "postgres://bordo:bordo@127.0.0.1:1/bordo" });
+
+    const ready = await app.inject({ url: "/api/health/ready" });
+    expect(ready.statusCode).toBe(503);
+    expect(ready.json().error.database.status).toBe("down");
   });
 
   it("reports not ready when Redis is unreachable", async () => {
