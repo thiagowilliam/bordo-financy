@@ -14,7 +14,7 @@ export const expenseSchema = z.object({
   amountInCents: z.number().int().positive("Informe um valor maior que zero"),
   currency: z.string().length(3),
   date: z.iso.date(),
-  description: z.string().min(1, "Informe uma descrição"),
+  description: z.string().trim().min(1, "Informe uma descrição"),
 });
 
 export const createExpenseSchema = expenseSchema.omit({ id: true });

@@ -17,6 +17,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import { AuthGuard } from "./modules/auth/auth.guard.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { CategoriesModule } from "./modules/categories/categories.module.js";
+import { ExpensesModule } from "./modules/expenses/expenses.module.js";
 import { TripsModule } from "./modules/trips/trips.module.js";
 import { ProfileModule } from "./modules/profile/profile.module.js";
 import { HealthModule } from "./health/health.module.js";
@@ -85,6 +86,7 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
     ProfileModule,
     CategoriesModule,
     TripsModule,
+    ExpensesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

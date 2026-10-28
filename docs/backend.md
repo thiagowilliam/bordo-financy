@@ -109,7 +109,8 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
    - **`profile`, done** (except photo and e-mail change, see "Profile").
    - **`categories`, done** (see "Categories").
-   - **`trips`, done** (see "Trips"). Next: `expenses` (with base costs).
+   - **`trips`, done** (see "Trips").
+   - **`expenses` and base costs, done** (see "Expenses"). Next: `photos`.
 6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
 
 ### Left for last
@@ -247,6 +248,26 @@ Dev databases created before this change need `pnpm --filter @bordo/api db:migra
 - `coverPhotoUrl` comes from the trip's `cover_photo_id` photo. A stored value that is an absolute URL (the dev seed) is returned as is; a bare object storage key has no public base yet, so it is `null` until the `photos` module adds storage (`common/storage/photo-url.ts`).
 - `spentInCents` adds every expense of the trip. Expenses are expected to be in the trip's currency; the expenses module will enforce it.
 - Editing and deleting a trip are not in the contract yet (the web has no screens for them).
+
+## Expenses and base costs
+
+`src/modules/expenses`. Routes live under a trip. The trip must be the user's (`404` otherwise, also for another user's expense ids) and every id in a path or filter must be a uuid (`400`).
+
+| Route                                    | Notes                                                                                                                                                                         |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/trips/:tripId/expenses`        | Newest date first. Filters: `kind`, `search` (case insensitive, `%` and `_` are plain text), `categories` (comma separated uuids), `from`, `to` (inclusive), `paymentMethod`. |
+| `POST /api/trips/:tripId/expenses`       | `createExpenseSchema`, `201`. Daily expenses and base costs use the same route (`kind`).                                                                                      |
+| `PUT /api/trips/:tripId/expenses/:id`    | Full replace, same rules as create.                                                                                                                                           |
+| `DELETE /api/trips/:tripId/expenses/:id` | `{ id }`.                                                                                                                                                                     |
+| `GET /api/trips/:tripId/base-costs`      | Expenses of kind `BASE`, oldest first (booking order).                                                                                                                        |
+
+Rules the server enforces beyond the shared schema (`422`):
+
+- The expense currency is the trip's currency (this is what lets `spentInCents` and the profile total add amounts).
+- The category is the user's own, of the same kind as the expense, and not hidden. Hidden categories are not offered for new expenses, but an expense that already has one keeps it when edited.
+- The trip comes from the path, never from the body; the owner comes from the session.
+
+`description` is trimmed by the shared schema (whitespace only is rejected). The date is not required to fall inside the trip: base costs are booked before it starts.
 
 ## Environment
 
