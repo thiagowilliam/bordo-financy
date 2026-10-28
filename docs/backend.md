@@ -108,7 +108,8 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
    - **4b, next:** Google sign-in with state and PKCE (and the `google_email` it needs), recovery e-mails through BullMQ with a real transport.
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
    - **`profile`, done** (except photo and e-mail change, see "Profile").
-   - **`categories`, done** (see "Categories"). Next: `trips`.
+   - **`categories`, done** (see "Categories").
+   - **`trips`, done** (see "Trips"). Next: `expenses` (with base costs).
 6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
 
 ### Left for last
@@ -232,6 +233,20 @@ Not built yet, on purpose:
 Not enforced yet: duplicate names (the contract does not ask for it) and a cap on how many custom categories an account can have.
 
 Dev databases created before this change need `pnpm --filter @bordo/api db:migrate`; the migration converts their data.
+
+## Trips
+
+`src/modules/trips`. Scoped by the session user like the others: another user's trip answers `404`, malformed ids `400`.
+
+| Route                | Notes                                                                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/trips`     | `tripSummarySchema[]`: the trip plus `spentInCents`, the sum of its expenses. Newest start date first (the web groups them into ongoing, upcoming and completed). |
+| `GET /api/trips/:id` | `tripSchema`.                                                                                                                                                     |
+| `POST /api/trips`    | `createTripSchema` (end not before start, budget above zero, supported currency). `201`. Owner, id and cover come from the server, never from the body.           |
+
+- `coverPhotoUrl` comes from the trip's `cover_photo_id` photo. A stored value that is an absolute URL (the dev seed) is returned as is; a bare object storage key has no public base yet, so it is `null` until the `photos` module adds storage (`common/storage/photo-url.ts`).
+- `spentInCents` adds every expense of the trip. Expenses are expected to be in the trip's currency; the expenses module will enforce it.
+- Editing and deleting a trip are not in the contract yet (the web has no screens for them).
 
 ## Environment
 

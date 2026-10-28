@@ -7,6 +7,8 @@ import {
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
+import { IdParamDto } from "../../common/dto/id-param.dto.js";
+
 import { CurrentUser } from "../auth/current-user.decorator.js";
 import type { SessionUser } from "../auth/session-user.js";
 import { CategoriesService } from "./categories.service.js";
@@ -14,7 +16,6 @@ import { CategoriesService } from "./categories.service.js";
 class CreateCategoryDto extends createZodDto(createCategorySchema) {}
 class UpdateCategoryDto extends createZodDto(updateCategorySchema) {}
 class SetHiddenDto extends createZodDto(setCategoryHiddenSchema) {}
-class IdParamDto extends createZodDto(z.object({ id: z.uuid() })) {}
 class DeleteQueryDto extends createZodDto(z.object({ moveTo: z.uuid().optional() })) {}
 
 @Controller("categories")
