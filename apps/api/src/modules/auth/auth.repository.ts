@@ -2,18 +2,11 @@ import { Inject, Injectable, ServiceUnavailableException } from "@nestjs/common"
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 
 import { DATABASE, type Database } from "../../database/database.module.js";
-import { passwordResetTokens, sessions, users } from "../../database/schema/index.js";
+import { DEFAULT_CATEGORIES } from "../../database/default-categories.js";
+import { categories, passwordResetTokens, sessions, users } from "../../database/schema/index.js";
 import type { SessionUser } from "./session-user.js";
 
 export type UserRow = typeof users.$inferSelect;
-
-const POSTGRES_UNIQUE_VIOLATION = "23505";
-
-export const isUniqueViolation = (error: unknown) =>
-  typeof error === "object" &&
-  error !== null &&
-  ((error as { code?: string }).code === POSTGRES_UNIQUE_VIOLATION ||
-    (error as { cause?: { code?: string } }).cause?.code === POSTGRES_UNIQUE_VIOLATION);
 
 /** Maps a row to what the web app reads as the profile. */
 export function toSessionUser(user: UserRow): SessionUser {
@@ -51,8 +44,16 @@ export class AuthRepository {
   }
 
   async createUser(values: { email: string; name: string; passwordHash: string }) {
-    const [user] = await this.db.insert(users).values(values).returning();
-    return user;
+    // The account and its own copy of the default categories, or neither.
+    return this.db.transaction(async (tx) => {
+      const [user] = await tx.insert(users).values(values).returning();
+      await tx
+        .insert(categories)
+        .values(
+          DEFAULT_CATEGORIES.map((category) => ({ ...category, userId: user.id, isDefault: true })),
+        );
+      return user;
+    });
   }
 
   async setPassword(userId: string, passwordHash: string) {

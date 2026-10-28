@@ -25,9 +25,16 @@ export class ProfileRepository {
     return user ?? null;
   }
 
-  /** Cascades to sessions, tokens, trips (with their expenses and photos) and own categories. */
+  /**
+   * Cascades to sessions, tokens, trips (with their expenses and photos) and categories. Trips go
+   * first: an expense restricts its category, and the cascade from the user would otherwise try to
+   * delete the categories while the expenses still exist.
+   */
   async deleteUser(userId: string) {
-    await this.db.delete(users).where(eq(users.id, userId));
+    await this.db.transaction(async (tx) => {
+      await tx.delete(trips).where(eq(trips.userId, userId));
+      await tx.delete(users).where(eq(users.id, userId));
+    });
   }
 
   /** Trips, days (both ends counted) and distinct destinations of the user. */

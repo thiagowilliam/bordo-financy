@@ -82,12 +82,13 @@ try {
     await tx.insert(schema.categories).values(
       categories.map((category) => ({
         id: uuidFor(category.id),
-        // Default categories are shared (no owner). The others belong to the seeded user.
-        userId: category.isDefault ? null : user.id,
+        userId: user.id,
         name: category.name,
         icon: category.icon,
         color: category.color,
         kind: category.kind,
+        isDefault: category.isDefault,
+        hidden: category.hidden,
       })),
     );
 

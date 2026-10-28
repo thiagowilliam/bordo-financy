@@ -80,7 +80,7 @@ Layers, outermost first:
 Auth tables are in `docs/auth.md` (`users`, `sessions`, `oauth_accounts`, `password_reset_tokens`). Domain tables:
 
 - `trips(id, user_id, name, destination, start_date, end_date, currency, budget_cents, cover_photo_id, created_at)`
-- `categories(id, user_id null, name, color, icon, hidden, created_at)` where `user_id` null means a default category
+- `categories(id, user_id, name, icon, color, kind, is_default, hidden, created_at)`, owned by a user (defaults are copied per user, see "Database")
 - `expenses(id, trip_id, kind DAILY|BASE, category_id, payment_method, amount_cents, currency, spent_at, description, created_at)`, with base costs being `kind = BASE`
 - `photos(id, trip_id, storage_key, width, height, created_at)`
 
@@ -107,7 +107,8 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
    - **4a, done:** e-mail and password (sign-up, sign-in, sign-out, session, forgot and reset password), Argon2id, sessions, global auth guard with `@Public()`, strict rate limits that fail closed. See "Auth" below.
    - **4b, next:** Google sign-in with state and PKCE (and the `google_email` it needs), recovery e-mails through BullMQ with a real transport.
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
-   - **`profile`, done** (except photo and e-mail change, see "Profile"). Next: `categories`.
+   - **`profile`, done** (except photo and e-mail change, see "Profile").
+   - **`categories`, done** (see "Categories"). Next: `trips`.
 6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
 
 ### Left for last
@@ -164,8 +165,8 @@ Decisions taken in phase 3:
 - **Names:** `casing: "snake_case"` in the Drizzle client and in `drizzle.config.ts`, so TypeScript stays camelCase and SQL snake_case.
 - **Money:** `bigint` in number mode (cents) plus `char(3)`. Checks: amount > 0, budget >= 0, end date >= start date, color 1 to 8.
 - **Users:** unique index on `lower(email)`. Sessions and reset tokens store only hashes.
-- **Hidden categories:** default categories are shared (`user_id` null), so "hidden" cannot be a column on `categories`. The `hidden_categories(user_id, category_id)` table holds it per user. The API maps it to `hidden` in the shared schema.
-- **Deleting a category** is `restrict` on `expenses.category_id`: the service moves the expenses first (`movedExpenses`), then deletes.
+- **Categories are per user.** Each account gets its own copy of the default categories at sign up (`src/database/default-categories.ts`, inserted with the user in one transaction), flagged `is_default`, with `hidden` on the row. This replaced the first idea (shared rows with `user_id` null plus a `hidden_categories` table): the app lets users edit and hide defaults, which a shared row cannot do per user. Migration `0001` converts existing data (copies per user, keeps what each user hid, repoints expenses). Changing the defaults list only affects new accounts.
+- **Deleting a category** is `restrict` on `expenses.category_id`: the service moves the expenses first (`movedExpenses`), then deletes. For the same reason deleting a user removes their trips first (`ProfileRepository.deleteUser`): the cascade from the user would otherwise try to delete categories that expenses still reference.
 - **Photos:** `storage_key` holds the object storage key. The seed stores the fixture URL there.
 
 Code: `src/database/schema/` (`auth.ts`, `domain.ts`), `database.module.ts` (global `DATABASE` and `DATABASE_CLIENT` providers, `null` without `DATABASE_URL`, pool closed on shutdown), `migrate.ts`, `seed.ts`.
@@ -215,6 +216,22 @@ Not built yet, on purpose:
 - `POST /api/profile/email-change`: needs the confirmation endpoint and a real mail transport (phase 4b).
 
 `totalInCents` adds only the expenses made in the profile's main currency. There is no exchange rate source, and adding euros to reais would be wrong. When trips in other currencies matter here, rates become a decision (provider, daily snapshot or rate at the time of the expense).
+
+## Categories
+
+`src/modules/categories`. Every query is scoped by the session user: another user's category id answers `404`, and ids must be uuids (`400` otherwise).
+
+| Route                            | Notes                                                                                                                                                                                                                         |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/categories`            | The user's categories: daily first, then in creation order (defaults first, ids are time ordered).                                                                                                                            |
+| `POST /api/categories`           | `name`, `icon`, `color`, `kind`. Always a custom category: `isDefault`, `hidden` and owner come from the server.                                                                                                              |
+| `PUT /api/categories/:id`        | `name`, `icon`, `color`. Works on defaults too (they are the user's own copy). The kind never changes.                                                                                                                        |
+| `PUT /api/categories/:id/hidden` | `{ hidden }`. Hidden categories are not offered for new expenses; existing expenses keep them.                                                                                                                                |
+| `DELETE /api/categories/:id`     | `409` for a default. If expenses use it, `?moveTo=<id>` is required and must be another category of the same kind owned by the user (`422` otherwise). Moves and deletes in one transaction, answers `{ id, movedExpenses }`. |
+
+Not enforced yet: duplicate names (the contract does not ask for it) and a cap on how many custom categories an account can have.
+
+Dev databases created before this change need `pnpm --filter @bordo/api db:migrate`; the migration converts their data.
 
 ## Environment
 

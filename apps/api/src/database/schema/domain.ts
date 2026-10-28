@@ -1,13 +1,13 @@
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  boolean,
   check,
   date,
   index,
   integer,
   pgEnum,
   pgTable,
-  primaryKey,
   smallint,
   text,
   uuid,
@@ -26,38 +26,34 @@ export const paymentMethod = pgEnum("payment_method", [
   "INTERNATIONAL_CARD",
 ]);
 
+/**
+ * Every user owns their categories, defaults included: each account gets its own copy of the
+ * defaults at sign up (`DEFAULT_CATEGORIES`), so editing, hiding or counting one never touches
+ * another user's data.
+ */
 export const categories = pgTable(
   "categories",
   {
     id: id(),
-    /** Null means a default category, shared by every user. */
-    userId: uuid().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     name: text().notNull(),
     /** Name from `categoryIconNameSchema` in `@bordo/shared/categories`. */
     icon: text().notNull(),
     /** Index of the `chart-N` token. */
     color: smallint().notNull(),
     kind: expenseKind().notNull(),
+    /** Came with the account. It can be hidden and edited, never deleted. */
+    isDefault: boolean().notNull().default(false),
+    /** Not offered for new expenses; existing ones keep it. */
+    hidden: boolean().notNull().default(false),
     createdAt: createdAt(),
   },
   (table) => [
     index("categories_user_id_idx").on(table.userId),
     check("categories_color_range", sql`${table.color} between 1 and 8`),
   ],
-);
-
-/** Categories a user hid. A default category is shared, so hiding it has to be per user. */
-export const hiddenCategories = pgTable(
-  "hidden_categories",
-  {
-    userId: uuid()
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    categoryId: uuid()
-      .notNull()
-      .references(() => categories.id, { onDelete: "cascade" }),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.categoryId] })],
 );
 
 export const trips = pgTable(
@@ -92,6 +88,8 @@ export const expenses = pgTable(
       .references(() => trips.id, { onDelete: "cascade" }),
     kind: expenseKind().notNull(),
     // Deleting a category moves its expenses first (see `deletedCategorySchema.movedExpenses`).
+    // Restrict: a category in use cannot be deleted. Deleting a whole user therefore removes their
+    // trips (and expenses) first, see `ProfileRepository.deleteUser`.
     categoryId: uuid()
       .notNull()
       .references(() => categories.id, { onDelete: "restrict" }),
