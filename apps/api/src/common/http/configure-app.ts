@@ -1,4 +1,5 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import fastifyCookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import { Logger } from "nestjs-pino";
 
@@ -9,6 +10,7 @@ export async function configureApp(app: NestFastifyApplication) {
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix(API_PREFIX);
   await app.register(helmet);
+  await app.register(fastifyCookie);
   app
     .getHttpAdapter()
     .getInstance()

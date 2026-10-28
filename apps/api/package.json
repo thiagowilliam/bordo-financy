@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@bordo/shared": "workspace:*",
+    "@fastify/cookie": "^11.1.5",
     "@fastify/helmet": "^13.2.0",
     "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/common": "^12.3.2",
@@ -31,6 +32,7 @@
     "@nestjs/platform-fastify": "^12.3.2",
     "@nestjs/terminus": "^12.1.0",
     "@nestjs/throttler": "^6.7.1",
+    "@node-rs/argon2": "^2.2.2",
     "drizzle-orm": "^0.45.4",
     "fastify": "5.12.7",
     "ioredis": "^5.11.1",

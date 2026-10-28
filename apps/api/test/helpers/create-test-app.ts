@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test, type TestingModuleBuilder } from "@nestjs/testing";
 import { vi } from "vitest";
 import { signInSchema } from "@bordo/shared/auth";
+import { Public } from "../../src/modules/auth/public.decorator.js";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
@@ -13,6 +14,7 @@ class EchoDto extends createZodDto(
 class SignInDto extends createZodDto(signInSchema) {}
 
 /** Routes that only exist in tests, to exercise pipes, guards and the exception filter. */
+@Public()
 @Controller("test")
 class TestController {
   @Post("echo")
