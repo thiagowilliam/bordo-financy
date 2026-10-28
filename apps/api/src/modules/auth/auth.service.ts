@@ -98,19 +98,32 @@ export class AuthService {
     );
 
     const user = await this.repository.findUserByEmail(email);
-    if (user) {
-      const token = generateToken();
-      await this.repository.replaceResetToken({
-        tokenHash: hashToken(token),
-        userId: user.id,
-        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
-      });
-      const link = new URL("/recuperar-senha/nova", this.config.get("WEB_URL", { infer: true }));
-      link.searchParams.set("token", token);
-      // Not awaited: sending must not change the response time, which would reveal the account.
-      void this.mailer.sendPasswordReset(user.email, link.toString()).catch(() => undefined);
-    }
+    if (user) await this.sendResetLink(user);
     return { email: input.email };
+  }
+
+  /**
+   * "Change password" (or "add one" to a Google-only account) from the profile: the same single use
+   * link as the recovery flow, sent to the signed-in user's own address.
+   */
+  async requestPasswordReset(user: { id: string; email: string }) {
+    const limits = AUTH_LIMITS.forgotPassword;
+    await this.limiter.hit(`forgot:user:${user.id}`, limits.email.limit, limits.email.windowMs);
+    await this.sendResetLink(user);
+    return { email: user.email };
+  }
+
+  private async sendResetLink(user: { id: string; email: string }) {
+    const token = generateToken();
+    await this.repository.replaceResetToken({
+      tokenHash: hashToken(token),
+      userId: user.id,
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    });
+    const link = new URL("/recuperar-senha/nova", this.config.get("WEB_URL", { infer: true }));
+    link.searchParams.set("token", token);
+    // Not awaited: sending must not change the response time, which would reveal the account.
+    void this.mailer.sendPasswordReset(user.email, link.toString()).catch(() => undefined);
   }
 
   async checkResetToken(token: string) {

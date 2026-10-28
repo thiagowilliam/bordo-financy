@@ -107,7 +107,19 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
    - **4a, done:** e-mail and password (sign-up, sign-in, sign-out, session, forgot and reset password), Argon2id, sessions, global auth guard with `@Public()`, strict rate limits that fail closed. See "Auth" below.
    - **4b, next:** Google sign-in with state and PKCE (and the `google_email` it needs), recovery e-mails through BullMQ with a real transport.
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
+   - **`profile`, done** (except photo and e-mail change, see "Profile"). Next: `categories`.
 6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
+
+### Left for last
+
+Pieces that were postponed because they depend on infrastructure that comes later. Do them after the phases above, before or together with phase 6, and tick them here.
+
+- [ ] **Google sign-in** (phase 4b): authorization code flow with state and PKCE, `email` column on `oauth_accounts` (fills `profile.googleEmail`, today always `null`), the `account-exists` rule, `GET /api/auth/google` and its callback.
+- [ ] **Mail delivery** (phase 4b): BullMQ job and a real transport (Resend, SES or similar) behind `MailerService`. Until then the recovery link is only logged outside production.
+- [ ] **Change e-mail**: `POST /api/profile/email-change` plus the confirmation endpoint and the web page that opens the link. Needs the mail delivery above. Until then the "Alterar" e-mail button of the profile fails against the real API.
+- [ ] **Profile photo**: `PUT` and `DELETE /api/profile/photo`. Needs the object storage and upload validation of the `photos` module.
+- [ ] **Profile total in other currencies**: `profile/stats` only adds expenses in the main currency. Decide the exchange rate source (provider, daily snapshot, or rate stored on each expense) and sum everything.
+- [ ] **Swagger**, generated from the shared schemas once a few domains exist.
 
 ## Running the API
 
@@ -183,6 +195,26 @@ Contract in `docs/auth.md`. How the API implements it (`src/modules/auth`):
 - Known gap: `profile.googleEmail` is always `null` until the Google flow stores the connected account's e-mail.
 
 Tests (`test/auth.test.ts`) run against a real Postgres: `globalSetup` creates `bordo_test` on the compose Postgres and migrates it. Without a reachable Postgres they are skipped locally; CI sets `REQUIRE_DATABASE=1` and has a Postgres service, so a missing database fails there.
+
+## Profile
+
+`src/modules/profile`. All routes need a session and only touch the signed-in user's data.
+
+| Route                              | Notes                                                                                                                                                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/profile`                 | The session user, in the shared `profileSchema` shape.                                                                                                                                                                                       |
+| `PATCH /api/profile`               | `name` and main `currency` only (`updateProfileSchema`). Unknown fields are dropped.                                                                                                                                                         |
+| `GET /api/profile/stats`           | Trips, days traveled (both ends counted), distinct destinations (case and space insensitive) and the total. See below.                                                                                                                       |
+| `GET /api/profile/export`          | CSV of every expense, same columns as the mock. UTF-8 with BOM, `no-store`. Amounts use the currency's decimals (`980.00` EUR, `4500` JPY). Cells that start with `=`, `+`, `-`, `@` get a leading quote so a spreadsheet does not run them. |
+| `POST /api/profile/password-reset` | Same single use link as recovery, sent to the signed-in user (also how a Google-only account adds a password). 3 per hour per account.                                                                                                       |
+| `DELETE /api/profile`              | Deletes the user, cascading to sessions, trips, expenses, photos and own categories, and clears the cookie.                                                                                                                                  |
+
+Not built yet, on purpose:
+
+- `PUT` and `DELETE /api/profile/photo`: need object storage, they come with `photos`.
+- `POST /api/profile/email-change`: needs the confirmation endpoint and a real mail transport (phase 4b).
+
+`totalInCents` adds only the expenses made in the profile's main currency. There is no exchange rate source, and adding euros to reais would be wrong. When trips in other currencies matter here, rates become a decision (provider, daily snapshot or rate at the time of the expense).
 
 ## Environment
 
