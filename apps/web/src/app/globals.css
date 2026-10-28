@@ -26,6 +26,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-success-soft: var(--success-soft);
   --color-success-ink: var(--success-ink);
+  --color-success-on-ink: var(--success-on-ink);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-soft: var(--warning-soft);
@@ -107,6 +108,7 @@
   --success-foreground: oklch(1 0 0);
   --success-soft: oklch(0.951 0.018 161.1); /* #E5F3EB */
   --success-ink: oklch(0.504 0.09 159.7); /* #2D7452 */
+  --success-on-ink: #7fd1a8; /* success icon on the dark toast */
   --warning: oklch(0.749 0.142 76.5); /* #E0A030 */
   --warning-foreground: oklch(0.277 0.021 211.4);
   --warning-soft: oklch(0.96 0.032 87.3); /* #FBF1DA */

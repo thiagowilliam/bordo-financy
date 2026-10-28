@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -19,6 +19,7 @@ import { TravelerHistory } from "@/components/organisms/traveler-history";
 import { UnsavedChangesBar } from "@/components/organisms/unsaved-changes-bar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { selectSetHasUnsavedChanges, useUnsavedChangesStore } from "@/stores/unsaved-changes";
 
 import {
   useDeleteProfile,
@@ -81,6 +82,13 @@ export function ProfileScreen() {
     values: profile.data ? { name: profile.data.name, currency: profile.data.currency } : undefined,
   });
   const { isDirty, errors } = form.formState;
+
+  // The account menu asks before signing out with unsaved edits. Clear the flag when leaving.
+  const setHasUnsavedChanges = useUnsavedChangesStore(selectSetHasUnsavedChanges);
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+    return () => setHasUnsavedChanges(false);
+  }, [isDirty, setHasUnsavedChanges]);
   const name = useWatch({ control: form.control, name: "name" }) ?? "";
   const watchedCurrency = useWatch({ control: form.control, name: "currency" });
   const currency = watchedCurrency ?? profile.data?.currency;

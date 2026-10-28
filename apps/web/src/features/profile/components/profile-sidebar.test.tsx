@@ -6,7 +6,10 @@ import { server } from "@/mocks/server";
 
 import { ProfileMobileTopBar, ProfileSidebar } from "./profile-sidebar";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/perfil" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/perfil",
+  useRouter: () => ({ replace: vi.fn() }),
+}));
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
@@ -30,7 +33,7 @@ describe("ProfileSidebar", () => {
 
 describe("ProfileMobileTopBar", () => {
   it("renders the top bar with the user's initial", async () => {
-    renderWithClient(<ProfileMobileTopBar fallbackName="Fulana" />);
+    renderWithClient(<ProfileMobileTopBar fallbackUser={fallbackUser} />);
     expect(screen.getByText("F")).toBeInTheDocument();
     expect(await screen.findByText("M")).toBeInTheDocument();
   });

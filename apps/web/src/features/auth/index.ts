@@ -8,6 +8,8 @@ export {
 export { getGoogleUrl } from "./api/client";
 export { useResetToken } from "./api/queries";
 export { useGoogleAuth } from "./hooks/use-google-auth";
+export { SIGNED_OUT_PARAM, useSignOutFlow } from "./hooks/use-sign-out-flow";
+export type { SignOutFlow } from "./hooks/use-sign-out-flow";
 export { authKeys } from "./api/keys";
 export {
   authUserSchema,
@@ -28,5 +30,6 @@ export type {
 } from "./types";
 export { ForgotPasswordScreen } from "./components/forgot-password-screen";
 export { ResetPasswordScreen } from "./components/reset-password-screen";
+export { SignOutConfirmDialog } from "./components/sign-out-confirm-dialog";
 export { SignInScreen } from "./components/sign-in-screen";
 export { SignUpScreen } from "./components/sign-up-screen";

@@ -7,6 +7,7 @@ import {
   useExpenseDrawerStore,
 } from "./expense-drawer";
 import { selectSidebarCollapsed, useSidebarStore } from "./sidebar";
+import { selectHasUnsavedChanges, useUnsavedChangesStore } from "./unsaved-changes";
 
 describe("expense drawer store", () => {
   beforeEach(() =>
@@ -44,5 +45,15 @@ describe("sidebar store", () => {
   it("toggles collapsed", () => {
     useSidebarStore.getState().toggle();
     expect(selectSidebarCollapsed(useSidebarStore.getState())).toBe(true);
+  });
+});
+
+describe("unsaved changes store", () => {
+  beforeEach(() => useUnsavedChangesStore.setState({ hasUnsavedChanges: false }));
+
+  it("starts clean and tracks the flag", () => {
+    expect(selectHasUnsavedChanges(useUnsavedChangesStore.getState())).toBe(false);
+    useUnsavedChangesStore.getState().setHasUnsavedChanges(true);
+    expect(selectHasUnsavedChanges(useUnsavedChangesStore.getState())).toBe(true);
   });
 });

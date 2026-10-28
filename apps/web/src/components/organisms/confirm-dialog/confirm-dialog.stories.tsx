@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import { LogOut } from "lucide-react";
+
 import { ConfirmDialog } from "./confirm-dialog";
 
 const meta = {
@@ -22,4 +24,13 @@ export const Default: Story = {};
 export const Pending: Story = { args: { isPending: true } };
 export const CustomLabel: Story = {
   args: { title: "Excluir custo?", confirmLabel: "Excluir custo" },
+};
+export const SignOut: Story = {
+  args: {
+    title: "Sair da conta?",
+    description: "Você precisará entrar novamente para acessar suas viagens.",
+    confirmLabel: "Sair",
+    confirmIcon: <LogOut />,
+    pendingLabel: "Saindo...",
+  },
 };

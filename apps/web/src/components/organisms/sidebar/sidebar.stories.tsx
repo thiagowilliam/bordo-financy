@@ -10,7 +10,7 @@ const meta = {
   component: Sidebar,
   tags: ["autodocs"],
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/viagens" } } },
-  args: { user: { name: "Marina", email: "marina@email.com" } },
+  args: { user: { name: "Marina", email: "marina@email.com" }, onSignOut: () => {} },
   decorators: [
     (Story) => (
       <div className="h-[720px]">
@@ -41,3 +41,5 @@ export const WithTripMenu: Story = {
     ),
   },
 };
+
+export const SigningOut: Story = { args: { isSigningOut: true } };

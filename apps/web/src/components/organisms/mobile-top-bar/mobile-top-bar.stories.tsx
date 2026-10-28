@@ -7,7 +7,11 @@ const meta = {
   component: MobileTopBar,
   tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
-  args: { userName: "Marina", className: "px-5 py-2" },
+  args: {
+    user: { name: "Marina", email: "marina@email.com" },
+    onSignOut: () => {},
+    className: "px-5 py-2",
+  },
 } satisfies Meta<typeof MobileTopBar>;
 
 export default meta;

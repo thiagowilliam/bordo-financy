@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 
 import { profileFixture } from "@/mocks/fixtures/profile";
 import { server } from "@/mocks/server";
+import { useUnsavedChangesStore } from "@/stores/unsaved-changes";
 
 import { fetchProfile } from "../api/client";
 import { ProfileScreen } from "./profile-screen";
@@ -47,6 +48,18 @@ describe("ProfileScreen", () => {
     renderScreen();
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível carregar");
     expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeInTheDocument();
+  });
+
+  it("flags unsaved edits for the account menu and clears the flag on leave", async () => {
+    const { unmount } = renderScreen();
+    const name = await screen.findByLabelText("Nome");
+    expect(useUnsavedChangesStore.getState().hasUnsavedChanges).toBe(false);
+
+    await userEvent.type(name, " Lima");
+    await waitFor(() => expect(useUnsavedChangesStore.getState().hasUnsavedChanges).toBe(true));
+
+    unmount();
+    expect(useUnsavedChangesStore.getState().hasUnsavedChanges).toBe(false);
   });
 
   it("shows the unsaved bar after an edit and saves it", async () => {

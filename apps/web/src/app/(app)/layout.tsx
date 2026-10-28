@@ -11,7 +11,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
     <>
       <AppShell
         sidebar={<ProfileSidebar fallbackUser={fallbackUser} tripMenu={<TripSidebarMenu />} />}
-        mobileHeader={<ProfileMobileTopBar fallbackName={fallbackUser.name} />}
+        mobileHeader={<ProfileMobileTopBar fallbackUser={fallbackUser} />}
         mobileNav={<TripMobileNav />}
       >
         {children}

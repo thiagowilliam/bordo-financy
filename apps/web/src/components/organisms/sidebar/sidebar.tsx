@@ -1,7 +1,7 @@
 import { CirclePlus, Luggage, Settings, User } from "lucide-react";
 
 import { Logo } from "@/components/atoms/logo";
-import { UserCard } from "@/components/molecules/user-card";
+import { AccountMenu } from "@/components/organisms/account-menu";
 import { SidebarNav, type SidebarNavItem } from "@/components/organisms/sidebar-nav";
 import { cn } from "@/lib/utils";
 
@@ -16,10 +16,19 @@ export type SidebarProps = Omit<React.ComponentProps<"div">, "children"> & {
   user: { name: string; email: string; photoUrl?: string | null };
   /** Trip menu shown below the global menu while a trip is open. */
   tripMenu?: React.ReactNode;
+  onSignOut: () => void;
+  isSigningOut?: boolean;
 };
 
-/** Full desktop sidebar column: logo, global menu and user card. */
-export function Sidebar({ user, tripMenu, className, ...props }: SidebarProps) {
+/** Full desktop sidebar column: logo, global menu and account menu. */
+export function Sidebar({
+  user,
+  tripMenu,
+  onSignOut,
+  isSigningOut,
+  className,
+  ...props
+}: SidebarProps) {
   return (
     <div
       className={cn(
@@ -33,7 +42,10 @@ export function Sidebar({ user, tripMenu, className, ...props }: SidebarProps) {
         <SidebarNav items={globalItems} />
         {tripMenu}
       </div>
-      <UserCard className="shrink-0" name={user.name} email={user.email} photoUrl={user.photoUrl} />
+      <div className="flex shrink-0 flex-col gap-3">
+        <div role="separator" className="h-px bg-border" />
+        <AccountMenu user={user} onSignOut={onSignOut} isSigningOut={isSigningOut} />
+      </div>
     </div>
   );
 }

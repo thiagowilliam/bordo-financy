@@ -60,4 +60,14 @@ describe("ConfirmDialog", () => {
     await userEvent.keyboard("{Escape}");
     expect(onOpenChange).not.toHaveBeenCalled();
   });
+
+  it("renders the confirm icon and a custom pending label", () => {
+    setup({ confirmIcon: <svg data-testid="icon" />, pendingLabel: "Saindo..." });
+    expect(screen.getByTestId("icon")).toBeInTheDocument();
+  });
+
+  it("uses the custom pending label", () => {
+    setup({ isPending: true, pendingLabel: "Saindo..." });
+    expect(screen.getByRole("button", { name: "Saindo..." })).toBeDisabled();
+  });
 });

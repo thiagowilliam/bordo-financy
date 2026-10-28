@@ -22,8 +22,14 @@ export type ConfirmDialogProps = {
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
-  /** Disables both buttons, shows "Excluindo..." and blocks Escape and overlay close. */
+  /** Icon rendered before the confirm label. */
+  confirmIcon?: React.ReactNode;
+  /** Confirm label while pending. */
+  pendingLabel?: string;
+  /** Disables both buttons, shows the pending label and blocks Escape and overlay close. */
   isPending?: boolean;
+  /** Full width buttons, cancel on top, larger type: the layout of the mobile sign out prompt. */
+  stacked?: boolean;
   className?: string;
 };
 
@@ -36,7 +42,10 @@ export function ConfirmDialog({
   confirmLabel = "Excluir",
   cancelLabel = "Cancelar",
   onConfirm,
+  confirmIcon,
+  pendingLabel = "Excluindo...",
   isPending = false,
+  stacked = false,
   className,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -57,22 +66,34 @@ export function ConfirmDialog({
           className,
         )}
       >
-        <DialogHeader className="gap-2">
-          <DialogTitle className="text-lg leading-snug font-bold text-foreground">
+        <DialogHeader className={cn("gap-2", stacked && "gap-2.5")}>
+          <DialogTitle
+            className={cn(
+              "text-lg leading-snug font-bold text-foreground",
+              stacked && "text-[22px] tracking-tight",
+            )}
+          >
             {title}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription
+            className={cn("text-sm text-muted-foreground", stacked && "text-[15px] leading-[1.45]")}
+          >
             {description}
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="m-0 flex-col-reverse gap-2 rounded-none border-0 bg-transparent p-0 sm:flex-row sm:justify-end">
+        <DialogFooter
+          className={cn(
+            "m-0 gap-2 rounded-none border-0 bg-transparent p-0 sm:flex-row sm:justify-end",
+            stacked ? "flex-col gap-2.5" : "flex-col-reverse",
+          )}
+        >
           <Button
             ref={cancelRef}
             type="button"
             variant="outline"
             disabled={isPending}
             onClick={() => onOpenChange(false)}
-            className="h-10 px-4"
+            className={cn("h-10 px-4", stacked && "h-12 text-base font-bold sm:w-auto")}
           >
             {cancelLabel}
           </Button>
@@ -80,9 +101,13 @@ export function ConfirmDialog({
             type="button"
             disabled={isPending}
             onClick={onConfirm}
-            className="h-10 bg-destructive px-4 text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30"
+            className={cn(
+              "h-10 bg-destructive px-4 text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30",
+              stacked && "h-12 text-base font-bold [&_svg:not([class*='size-'])]:size-4.5",
+            )}
           >
-            {isPending ? "Excluindo..." : confirmLabel}
+            {!isPending && confirmIcon}
+            {isPending ? pendingLabel : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
