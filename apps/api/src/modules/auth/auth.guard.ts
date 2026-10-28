@@ -9,7 +9,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 
 import { IS_PUBLIC } from "./public.decorator.js";
 import { SESSION_COOKIE } from "./auth.constants.js";
-import { setSessionCookie } from "./session-cookie.js";
+import { clearSessionCookie, setSessionCookie } from "./session-cookie.js";
 import { SessionsService } from "./sessions.service.js";
 
 /** Global guard: every route needs a valid session unless it is marked `@Public()`. */
@@ -33,7 +33,12 @@ export class AuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException();
 
     const session = await this.sessions.validate(token);
-    if (!session) throw new UnauthorizedException();
+    if (!session) {
+      // A stale cookie would keep the web proxy treating the visitor as signed in (and sending
+      // them away from the sign in page). Drop it together with the 401.
+      clearSessionCookie(http.getResponse<FastifyReply>());
+      throw new UnauthorizedException();
+    }
 
     request.user = session.user;
     if (session.refreshed) setSessionCookie(http.getResponse<FastifyReply>(), token);

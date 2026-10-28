@@ -9,8 +9,8 @@ export const SIGN_IN_PATH = "/entrar";
 /** Routes that need a session. A prefix covers its sub-routes. */
 const PROTECTED_PREFIXES = ["/viagens", "/perfil", "/configuracoes", "/onboarding"];
 
-/** Routes only for signed-out users. */
-const GUEST_ONLY_PATHS = ["/entrar", "/criar-conta", "/recuperar-senha"];
+/** Routes only for signed-out users. The landing page too: a returning user goes straight to the trips. */
+const GUEST_ONLY_PATHS = ["/", "/entrar", "/criar-conta", "/recuperar-senha"];
 
 const matchesPrefix = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -33,6 +33,18 @@ export function resolveAuthRedirect({
   }
   if (hasSession && GUEST_ONLY_PATHS.includes(pathname)) return SIGNED_IN_HOME;
   return null;
+}
+
+/**
+ * Where to send a user whose session is no longer valid, or `null` when they are already on a
+ * signed-out page (no loop).
+ */
+export function resolveSignInRedirect({
+  pathname,
+  search = "",
+}: Omit<AuthRedirectInput, "hasSession">) {
+  if (GUEST_ONLY_PATHS.includes(pathname)) return null;
+  return `${SIGN_IN_PATH}?next=${encodeURIComponent(`${pathname}${search}`)}`;
 }
 
 /** Accepts only same-origin paths, so `?next=` cannot become an open redirect. */
