@@ -24,6 +24,12 @@ export const signUpSchema = z
     message: "As senhas não coincidem.",
   });
 
+/** What the sign-up form sends: the confirmation field stays in the browser. */
+export const signUpBodySchema = z.object({
+  email,
+  password: z.string().min(MIN_PASSWORD_LENGTH, `Use ao menos ${MIN_PASSWORD_LENGTH} caracteres`),
+});
+
 export const forgotPasswordSchema = z.object({ email });
 
 /** The backend answers with the signed-in user. The session itself travels in the cookie. */
@@ -45,6 +51,12 @@ export const newPasswordSchema = z
     path: ["confirmPassword"],
     message: "As senhas não coincidem.",
   });
+
+/** Body of `POST /api/auth/reset-password`: the e-mailed token and the new (strong) password. */
+export const resetPasswordBodySchema = z.object({
+  token: z.string().min(1),
+  password: z.string().refine(isStrongPassword, "Crie uma senha que atenda a todos os requisitos"),
+});
 
 /** What the backend knows about a recovery link: the account it belongs to. */
 export const resetTokenSchema = z.object({ email: z.string() });
