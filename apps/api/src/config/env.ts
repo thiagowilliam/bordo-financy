@@ -30,6 +30,11 @@ export const envSchema = z
     REDIS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
     DATABASE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
+    /** Where photos are stored. Only `local` (a folder on disk) exists; an S3 compatible driver is next. */
+    STORAGE_DRIVER: z.enum(["local"]).default("local"),
+    STORAGE_LOCAL_DIR: z.string().min(1).default("storage"),
+    /** Prefix of the photo URLs the API returns: the media route, or the CDN / bucket address later. */
+    MEDIA_BASE_URL: z.string().min(1).default("/api/media"),
     /** Public address of the web app, used in e-mailed links. */
     WEB_URL: z.url().default("http://localhost:3000"),
     TRUST_PROXY: z.preprocess(emptyToUndefined, z.string().optional()),

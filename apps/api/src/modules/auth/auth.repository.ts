@@ -2,6 +2,7 @@ import { Inject, Injectable, ServiceUnavailableException } from "@nestjs/common"
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 
 import { DATABASE, type Database } from "../../database/database.module.js";
+import { toPhotoUrl } from "../../common/storage/photo-url.js";
 import { DEFAULT_CATEGORIES } from "../../database/default-categories.js";
 import { categories, passwordResetTokens, sessions, users } from "../../database/schema/index.js";
 import type { SessionUser } from "./session-user.js";
@@ -15,7 +16,7 @@ export function toSessionUser(user: UserRow): SessionUser {
     name: user.name,
     email: user.email,
     emailVerified: user.emailVerifiedAt !== null,
-    photoUrl: user.photoUrl,
+    photoUrl: toPhotoUrl(user.photoUrl),
     currency: user.currency as SessionUser["currency"],
     hasPassword: user.passwordHash !== null,
     // Filled in when Google sign-in lands and stores the connected account's e-mail.

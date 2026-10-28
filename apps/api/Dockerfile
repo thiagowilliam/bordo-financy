@@ -35,6 +35,8 @@ COPY --from=build --chown=node:node /out/node_modules ./node_modules
 COPY --from=build --chown=node:node /out/dist ./dist
 # SQL migrations, applied by `node dist/database/migrate.js` as a deploy step (never on API boot).
 COPY --from=build --chown=node:node /out/migrations ./migrations
+# Uploaded photos (local storage driver). Owned by `node` so a mounted volume is writable.
+RUN mkdir -p /app/storage && chown node:node /app/storage
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \

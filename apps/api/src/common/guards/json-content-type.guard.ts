@@ -5,7 +5,10 @@ import {
   HttpStatus,
   Injectable,
 } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import type { FastifyRequest } from "fastify";
+
+import { ALLOW_MULTIPART } from "../../modules/auth/allow-multipart.decorator.js";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -15,6 +18,8 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  */
 @Injectable()
 export class JsonContentTypeGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     if (!MUTATING_METHODS.has(request.method)) return true;
@@ -25,6 +30,13 @@ export class JsonContentTypeGuard implements CanActivate {
     if (!hasBody) return true;
 
     const contentType = (request.headers["content-type"] ?? "").split(";")[0]?.trim().toLowerCase();
+    // Upload routes opt in to multipart; SameSite=Lax cookies still keep cross-site forms out.
+    const allowsMultipart = this.reflector.getAllAndOverride<boolean>(ALLOW_MULTIPART, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (allowsMultipart && contentType === "multipart/form-data") return true;
+
     if (contentType !== "application/json") {
       throw new HttpException(
         "Content-Type must be application/json",

@@ -1,7 +1,23 @@
-import { Body, Controller, Delete, Get, Header, HttpCode, Patch, Post, Res } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  HttpCode,
+  Patch,
+  Post,
+  Put,
+  Req,
+  Res,
+} from "@nestjs/common";
+import { AVATAR_MAX_BYTES } from "@bordo/shared/photos";
 import { updateProfileSchema } from "@bordo/shared/profile";
 import { createZodDto } from "nestjs-zod";
-import type { FastifyReply } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
+
+import { readUploads } from "../../common/http/read-uploads.js";
+import { AllowMultipart } from "../auth/allow-multipart.decorator.js";
 
 import { CurrentUser } from "../auth/current-user.decorator.js";
 import { clearSessionCookie } from "../auth/session-cookie.js";
@@ -27,6 +43,22 @@ export class ProfileController {
   @Patch()
   update(@CurrentUser() user: SessionUser, @Body() body: UpdateProfileDto) {
     return this.profile.update(user, body);
+  }
+
+  /** `multipart/form-data`, one image (JPG, PNG or WEBP, up to 5 MB) under the field `photo`. */
+  @Put("photo")
+  @AllowMultipart()
+  async setPhoto(@CurrentUser() user: SessionUser, @Req() request: FastifyRequest) {
+    const [upload] = await readUploads(request, "photo", {
+      maxFiles: 1,
+      maxBytes: AVATAR_MAX_BYTES,
+    });
+    return this.profile.setPhoto(user, upload);
+  }
+
+  @Delete("photo")
+  removePhoto(@CurrentUser() user: SessionUser) {
+    return this.profile.removePhoto(user);
   }
 
   /** Same link for changing a password and for adding one to a Google-only account. */
