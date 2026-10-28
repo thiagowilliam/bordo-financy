@@ -119,7 +119,7 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
    - **`trips`, done** (see "Trips").
    - **`expenses` and base costs, done** (see "Expenses").
    - **`photos`, done** (see "Photos"), including the profile photo. Phase 5 is complete.
-6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
+6. **Switch the web app.** Done (see "Web app against the API"): the real API is the default, the mocks are opt-in, the session is read on the server, a `401` goes to sign in, and a contract test runs the web client against the API. What is left is the manual end to end pass once everything is finished.
 
 ### Left for last
 
@@ -296,6 +296,13 @@ Rules the server enforces beyond the shared schema (`422`):
 - The limits (`MAX_PHOTOS`, `MAX_PHOTO_BYTES`, accepted types, avatar limits) live in `@bordo/shared/photos`; the web client uses the same numbers.
 - A file that cannot be deleted from storage is logged, not fatal: the row is already gone.
 
+## Web app against the API
+
+- The web app calls the API by default. `BACKEND_URL` (default `http://localhost:3001` in development, required in production) feeds the `/api/*` rewrite, so the session cookie is first party. The MSW mocks are opt-in: `NEXT_PUBLIC_API_MOCKING=enabled`, development only. `apps/web/.env.example` documents both.
+- The logged area layout reads the session on the server (`src/lib/server-session.ts`) and seeds the profile query, so the sidebar shows the right user on the first paint. A stale cookie renders the page and the client handles the `401`; the API clears the cookie on that response, which is what stops `/entrar` and `/viagens` from bouncing the visitor.
+- **Contract test:** `pnpm --filter @bordo/web test:contract` runs the web app's own client functions (the ones the browser uses, with their Zod schemas) against a running API, in the order a user would: sign up, profile, categories, trips, expenses and base costs, filters, CSV, photos, profile photo, account deletion. By default it calls `http://localhost:3000`, so it goes through the Next rewrite; set `CONTRACT_API_URL=http://localhost:3001` to hit the API directly. It needs `pnpm dev:api` (and `pnpm dev` for the default) running, signs up a throwaway user per run (the sign-up limit is 10 per hour per IP; `redis-cli flushall` resets it) and deletes the account at the end. It is not part of `pnpm test` or CI.
+- Features that still fail against the real API because their endpoint is not built: Google sign-in, change e-mail (see "Left for last").
+
 ## Environment
 
 Validated with Zod at boot (`src/config/env.ts`). The process exits with every problem listed. A `.env` file in `apps/api` is read outside production; real variables win.
@@ -330,13 +337,13 @@ Validated with Zod at boot (`src/config/env.ts`). The process exits with every p
 
 ## Where we stopped
 
-Last updated 2026-10-28. Phases 1 to 3 are merged into `main` (PRs #1 and #2). Phase 4a (e-mail and password auth) is written on the branch `feat/auth`, with tests against a real Postgres, and was smoke tested in the production container (migrate, sign-up, session, sign-out, health). Not committed or in a PR yet.
+Last updated 2026-10-29. Done and merged: phases 1 to 3, 4a (e-mail and password auth), 5 (all domains: `profile`, `categories`, `trips`, `expenses` with base costs, `photos`). Phase 6 (web app against the API) is on the branch `feat/web-backend`.
 
 ### Next
 
-1. Commit and PR for `feat/auth`.
-2. Phase 4b: Google sign-in (state and PKCE, `google_email` column on `oauth_accounts`, the `account-exists` rule), BullMQ job and a mail provider for the recovery e-mail.
-3. Phase 5: domains, starting with `profile`.
+1. Phase 4b: Google sign-in and mail delivery (BullMQ and a provider). Needs Google OAuth credentials.
+2. The items under "Left for last": S3 compatible storage driver (AWS S3 or Cloudflare R2), change e-mail, profile total in other currencies, Swagger, `/termos` and `/privacidade` pages.
+3. The manual end to end pass of the whole app, once the above is done.
 
 ### Gotchas learned
 

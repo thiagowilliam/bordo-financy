@@ -18,7 +18,7 @@ Browser ──/api/auth/*──▶ Next (rewrite, same origin) ──▶ Node ba
    └──────────── Set-Cookie: bordo_session (httpOnly) ◀──────┘
 ```
 
-- `next.config.ts` rewrites `/api/*` to `BACKEND_URL` when it is set, so the cookie is first-party and there is no CORS. In development MSW answers `/api/*` instead (`NEXT_PUBLIC_API_MOCKING=disabled` turns it off).
+- `next.config.ts` rewrites `/api/*` to `BACKEND_URL` when it is set, so the cookie is first-party and there is no CORS. `BACKEND_URL` defaults to `http://localhost:3001` in development and must be set in production. The MSW mocks are opt-in (`NEXT_PUBLIC_API_MOCKING=enabled`, development only).
 - `src/proxy.ts` redirects early using only the cookie: signed-out users on `/viagens`, `/perfil`, `/configuracoes`, `/onboarding` go to `/entrar?next=...`; signed-in users on `/` (the landing page), `/entrar`, `/criar-conta`, `/recuperar-senha` go to `/viagens`, so a returning visitor lands on the trips. The rules live in `src/lib/auth-routes.ts`. It is skipped while mocking.
 - A stale cookie (expired or revoked session) would loop `/entrar` to `/viagens` and back, so the backend clears `bordo_session` on the `401` it answers, and a global `QueryCache` `onError` sends the user to `/entrar?next=...` when any query gets a `401`.
 - The login survives closing the browser: the cookie has a 30 day `Max-Age` and slides while the user keeps coming back.
@@ -63,7 +63,9 @@ Password recovery: `forgot-password` e-mails a single-use link (token stored has
 
 ## Frontend checklist when the backend exists
 
-1. Set `BACKEND_URL` (server) and `NEXT_PUBLIC_API_MOCKING=disabled`.
-2. Replace the `user` fallback of `src/app/(app)/layout.tsx` with a server-side session read if a flash of the fallback name bothers.
-3. Handle a `401` from any query by sending the user to `/entrar?next=...` (a global `QueryCache` `onError`).
-4. Terms of use and privacy policy pages (`/termos`, `/privacidade`) are placeholders. Onboarding (`/onboarding`) is not implemented yet.
+All done except the last item (see `docs/backend.md`, phase 6):
+
+1. [x] `BACKEND_URL` (defaults to the local API in development) and mocks opt-in (`NEXT_PUBLIC_API_MOCKING=enabled`). See `apps/web/.env.example`.
+2. [x] The `user` fallback of `src/app/(app)/layout.tsx` is gone: the layout reads the session on the server (`src/lib/server-session.ts`) and seeds the profile query with it, so the first paint already has the right name. With no session or a stale one it renders an empty identity and the client handles the `401`. The mock user only shows while the mocks run.
+3. [x] A `401` from any query sends the user to `/entrar?next=...` (a global `QueryCache` `onError`), and the backend clears the stale cookie in that response.
+4. [ ] Terms of use and privacy policy pages (`/termos`, `/privacidade`) are placeholders.
