@@ -77,6 +77,10 @@ export class ProfileService {
     return toSessionUser(updated);
   }
 
+  requestEmailChange(user: SessionUser, input: { email: string }) {
+    return this.auth.requestEmailChange(user, input);
+  }
+
   requestPasswordReset(user: SessionUser) {
     return this.auth.requestPasswordReset(user);
   }

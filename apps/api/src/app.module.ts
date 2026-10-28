@@ -18,6 +18,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import { AuthGuard } from "./modules/auth/auth.guard.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { CategoriesModule } from "./modules/categories/categories.module.js";
+import { MailModule } from "./modules/mail/mail.module.js";
 import { PhotosModule } from "./modules/photos/photos.module.js";
 import { ExpensesModule } from "./modules/expenses/expenses.module.js";
 import { TripsModule } from "./modules/trips/trips.module.js";
@@ -40,6 +41,7 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
     DatabaseModule,
     RateLimitModule,
     StorageModule,
+    MailModule,
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => {

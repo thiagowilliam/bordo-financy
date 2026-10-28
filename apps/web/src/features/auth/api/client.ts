@@ -3,6 +3,8 @@ import { env } from "@/lib/env";
 
 import {
   authUserSchema,
+  emailChangedSchema,
+  emailChangeTokenSchema,
   emailSentSchema,
   googleRedirectSchema,
   resetTokenSchema,
@@ -33,6 +35,17 @@ export const fetchResetToken = (token: string) =>
 /** Also ends the account's other sessions. */
 export const resetPassword = (input: { token: string; password: string }) =>
   apiFetch("/api/auth/reset-password", signedOutSchema, { method: "POST", body: input });
+
+/** Answers `410` when the link expired or was already used. Reading it does not consume the link. */
+export const fetchEmailChangeToken = (token: string) =>
+  apiFetch(`/api/auth/email-change/${encodeURIComponent(token)}`, emailChangeTokenSchema);
+
+/** Answers `410` (expired or used) or `409` (address now taken). Ends every session of the account. */
+export const confirmEmailChange = (token: string) =>
+  apiFetch("/api/auth/email-change/confirm", emailChangedSchema, {
+    method: "POST",
+    body: { token },
+  });
 
 type GoogleUrlOptions = {
   next?: string;

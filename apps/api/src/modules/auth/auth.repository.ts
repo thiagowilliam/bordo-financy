@@ -4,7 +4,13 @@ import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { DATABASE, type Database } from "../../database/database.module.js";
 import { toPhotoUrl } from "../../common/storage/photo-url.js";
 import { DEFAULT_CATEGORIES } from "../../database/default-categories.js";
-import { categories, passwordResetTokens, sessions, users } from "../../database/schema/index.js";
+import {
+  categories,
+  emailChangeTokens,
+  passwordResetTokens,
+  sessions,
+  users,
+} from "../../database/schema/index.js";
 import type { SessionUser } from "./session-user.js";
 
 export type UserRow = typeof users.$inferSelect;
@@ -100,6 +106,72 @@ export class AuthRepository {
     await this.db
       .delete(passwordResetTokens)
       .where(sql`${passwordResetTokens.expiresAt} <= ${now}`);
+  }
+
+  /** One pending e-mail change per user: a new request replaces the previous one. */
+  async replaceEmailChangeToken(values: {
+    tokenHash: string;
+    userId: string;
+    newEmail: string;
+    expiresAt: Date;
+  }) {
+    await this.db.transaction(async (tx) => {
+      await tx.delete(emailChangeTokens).where(eq(emailChangeTokens.userId, values.userId));
+      await tx.insert(emailChangeTokens).values(values);
+    });
+  }
+
+  async findValidEmailChange(tokenHash: string) {
+    const [row] = await this.db
+      .select({ newEmail: emailChangeTokens.newEmail })
+      .from(emailChangeTokens)
+      .where(
+        and(
+          eq(emailChangeTokens.tokenHash, tokenHash),
+          isNull(emailChangeTokens.usedAt),
+          gt(emailChangeTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+    return row ?? null;
+  }
+
+  /**
+   * Spends the token and switches the account to the new address, in one transaction: the e-mail
+   * counts as verified (the link reached it), and every session and recovery link of the account
+   * ends, since both were tied to the old address. The conditional update makes the token single use.
+   * Returns null for an unknown, used or expired token. Throws a unique violation if someone else
+   * took the address in the meantime (nothing is changed then, the token stays valid).
+   */
+  async consumeEmailChange(tokenHash: string) {
+    return this.db.transaction(async (tx) => {
+      const [token] = await tx
+        .update(emailChangeTokens)
+        .set({ usedAt: new Date() })
+        .where(
+          and(
+            eq(emailChangeTokens.tokenHash, tokenHash),
+            isNull(emailChangeTokens.usedAt),
+            gt(emailChangeTokens.expiresAt, new Date()),
+          ),
+        )
+        .returning({ userId: emailChangeTokens.userId, newEmail: emailChangeTokens.newEmail });
+      if (!token) return null;
+
+      const [before] = await tx
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, token.userId))
+        .for("update");
+      await tx
+        .update(users)
+        .set({ email: token.newEmail, emailVerifiedAt: new Date() })
+        .where(eq(users.id, token.userId));
+      await tx.delete(sessions).where(eq(sessions.userId, token.userId));
+      await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, token.userId));
+      await tx.delete(emailChangeTokens).where(eq(emailChangeTokens.userId, token.userId));
+      return { oldEmail: before.email, newEmail: token.newEmail };
+    });
   }
 
   /** One live recovery link per user: a new request replaces the previous one. */

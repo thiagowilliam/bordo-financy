@@ -69,6 +69,22 @@ export const oauthAccounts = pgTable(
   ],
 );
 
+/** A pending e-mail change: the link goes to `newEmail`, and only its hash is kept. */
+export const emailChangeTokens = pgTable(
+  "email_change_tokens",
+  {
+    tokenHash: text().primaryKey(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    newEmail: text().notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    usedAt: timestamp({ withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [index("email_change_tokens_user_id_idx").on(table.userId)],
+);
+
 export const passwordResetTokens = pgTable(
   "password_reset_tokens",
   {

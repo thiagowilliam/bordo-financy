@@ -12,7 +12,7 @@ import {
   Res,
 } from "@nestjs/common";
 import { AVATAR_MAX_BYTES } from "@bordo/shared/photos";
-import { updateProfileSchema } from "@bordo/shared/profile";
+import { changeEmailSchema, updateProfileSchema } from "@bordo/shared/profile";
 import { createZodDto } from "nestjs-zod";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
@@ -25,6 +25,7 @@ import type { SessionUser } from "../auth/session-user.js";
 import { ProfileService } from "./profile.service.js";
 
 class UpdateProfileDto extends createZodDto(updateProfileSchema) {}
+class ChangeEmailDto extends createZodDto(changeEmailSchema) {}
 
 @Controller("profile")
 export class ProfileController {
@@ -59,6 +60,13 @@ export class ProfileController {
   @Delete("photo")
   removePhoto(@CurrentUser() user: SessionUser) {
     return this.profile.removePhoto(user);
+  }
+
+  /** Sends a confirmation link to the new address. The e-mail only changes when it is opened. */
+  @Post("email-change")
+  @HttpCode(200)
+  changeEmail(@CurrentUser() user: SessionUser, @Body() body: ChangeEmailDto) {
+    return this.profile.requestEmailChange(user, body);
   }
 
   /** Same link for changing a password and for adding one to a Google-only account. */

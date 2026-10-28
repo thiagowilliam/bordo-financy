@@ -34,6 +34,13 @@ describe("resolveAuthRedirect", () => {
   });
 });
 
+describe("resolveAuthRedirect for the e-mail change link", () => {
+  it("lets /confirmar-email through signed in and signed out", () => {
+    expect(resolveAuthRedirect({ pathname: "/confirmar-email", hasSession: true })).toBeNull();
+    expect(resolveAuthRedirect({ pathname: "/confirmar-email", hasSession: false })).toBeNull();
+  });
+});
+
 describe("resolveSignInRedirect", () => {
   it("sends an expired session to sign in, keeping the destination", () => {
     expect(resolveSignInRedirect({ pathname: "/viagens/abc", search: "?q=a" })).toBe(

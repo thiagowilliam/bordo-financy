@@ -30,7 +30,9 @@ export const updateProfileSchema = z.object({
   currency: z.enum(SUPPORTED_CURRENCY_CODES, "Selecione a moeda"),
 });
 
-export const changeEmailSchema = z.object({ email: z.email("E-mail inválido") });
+export const changeEmailSchema = z.object({
+  email: z.string().trim().pipe(z.email("E-mail inválido")),
+});
 
 /** Answer of the endpoints that send a link by e-mail. */
 export const emailSentSchema = z.object({ email: z.string() });

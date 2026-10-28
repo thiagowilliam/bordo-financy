@@ -1,6 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { fetchSession, signIn, signOut, signUp } from "@/features/auth/api/client";
+import {
+  confirmEmailChange,
+  fetchEmailChangeToken,
+  fetchResetToken,
+  fetchSession,
+  requestPasswordRecovery,
+  resetPassword,
+  signIn,
+  signOut,
+  signUp,
+} from "@/features/auth/api/client";
 import {
   createCategory,
   deleteCategory,
@@ -27,6 +37,7 @@ import {
   fetchProfile,
   fetchProfileStats,
   removeProfilePhoto,
+  requestEmailChange,
   requestPasswordReset,
   updateProfile,
   uploadProfilePhoto,
@@ -44,6 +55,38 @@ const pngFile = (name: string) => new File([PNG], name, { type: "image/png" });
 
 const PASSWORD = "Senha-forte-1";
 const email = `contract-${Date.now()}@email.com`;
+const newEmail = `new-${Date.now()}@email.com`;
+const NEW_PASSWORD = "Outra-senha-9!";
+
+/** Mailpit, the development inbox (`docker compose up -d mailpit`, the API pointed at it). */
+const MAILPIT = process.env.CONTRACT_MAILPIT_URL ?? "http://localhost:8025";
+const mailpitUp = await fetch(`${MAILPIT}/api/v1/info`, { signal: AbortSignal.timeout(1500) })
+  .then((response) => response.ok)
+  .catch(() => false);
+
+type Inbox = { ID: string; Subject: string; Text: string; HTML: string };
+
+const idsFor = async (address: string): Promise<string[]> => {
+  const found = (await (
+    await fetch(`${MAILPIT}/api/v1/search?query=to:${encodeURIComponent(address)}`)
+  ).json()) as { messages?: { ID: string }[] };
+  return (found.messages ?? []).map((message) => message.ID);
+};
+
+/** The ids already in the inbox of `address`: take it BEFORE the action that sends a new e-mail. */
+const inboxSnapshot = async (address: string) => new Set(await idsFor(address));
+
+/** Waits for a message to `address` that is not in `seen` (the queue delivers asynchronously). */
+async function inboxMessage(address: string, seen: Set<string>): Promise<Inbox> {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const id = (await idsFor(address)).find((candidate) => !seen.has(candidate));
+    if (id) return (await (await fetch(`${MAILPIT}/api/v1/message/${id}`)).json()) as Inbox;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`no new e-mail arrived for ${address}`);
+}
+
+const tokenOf = (message: { Text: string }) => /token=([\w-]+)/.exec(message.Text)![1];
 
 const status = async (promise: Promise<unknown>) => {
   try {
@@ -301,6 +344,53 @@ describe("web API client against the real API", () => {
       expect((await removeProfilePhoto()).photoUrl).toBeNull();
     });
   });
+
+  describe.skipIf(!mailpitUp)(
+    "e-mails through the queue (needs Mailpit and the API pointed at it)",
+    () => {
+      it("recovers a password from the e-mailed link", async () => {
+        await signOut();
+        const seen = await inboxSnapshot(email);
+        expect(await requestPasswordRecovery({ email })).toEqual({ email });
+
+        const message = await inboxMessage(email, seen);
+        expect(message.Subject).toBe("Crie uma nova senha no Bordo");
+        expect(message.HTML).toContain("Criar nova senha");
+        const token = tokenOf(message);
+        expect(await fetchResetToken(token)).toEqual({ email });
+
+        await resetPassword({ token, password: NEW_PASSWORD });
+        expect(await status(fetchResetToken(token))).toBe(410);
+        expect(await status(signIn({ email, password: PASSWORD }))).toBe(401);
+        expect((await signIn({ email, password: NEW_PASSWORD })).email).toBe(email);
+      });
+
+      it("changes the e-mail: link to the new address, confirmation, notice to the old one", async () => {
+        const seenNew = await inboxSnapshot(newEmail);
+        const seenOld = await inboxSnapshot(email);
+        expect(await requestEmailChange(newEmail)).toEqual({ email: newEmail });
+
+        const message = await inboxMessage(newEmail, seenNew);
+        expect(message.Subject).toBe("Confirme seu novo e-mail no Bordo");
+        const token = tokenOf(message);
+        expect(await fetchEmailChangeToken(token)).toEqual({ email: newEmail });
+        expect((await fetchProfile()).email).toBe(email);
+
+        expect(await confirmEmailChange(token)).toEqual({ email: newEmail });
+        expect(await status(fetchSession())).toBe(401);
+        expect(await status(confirmEmailChange(token))).toBe(410);
+
+        const notice = await inboxMessage(email, seenOld);
+        expect(notice.Subject).toBe("O e-mail da sua conta no Bordo foi alterado");
+        expect(notice.Text).toContain(newEmail);
+
+        expect(await status(signIn({ email, password: NEW_PASSWORD }))).toBe(401);
+        expect((await signIn({ email: newEmail, password: NEW_PASSWORD })).emailVerified).toBe(
+          true,
+        );
+      });
+    },
+  );
 
   describe("account", () => {
     it("deletes the account and the session stops working", async () => {
