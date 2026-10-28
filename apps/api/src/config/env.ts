@@ -35,6 +35,22 @@ export const envSchema = z
     STORAGE_LOCAL_DIR: z.string().min(1).default("storage"),
     /** Prefix of the photo URLs the API returns: the media route, or the CDN / bucket address later. */
     MEDIA_BASE_URL: z.string().min(1).default("/api/media"),
+    /** SMTP server for account e-mails, as a URL: `smtps://user:password@host:465`. Any provider with SMTP works (Resend, Amazon SES...). Without it, e-mails are only logged (development). */
+    MAIL_SMTP_URL: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .regex(/^smtps?:\/\//i, "MAIL_SMTP_URL must start with smtp:// or smtps://")
+        .optional(),
+    ),
+    /** Sender, like `Bordo <nao-responda@seudominio.com>`. The domain must be verified at the provider. */
+    MAIL_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
+    /** Runs the e-mail worker inside this process. Turn off to run it elsewhere. */
+    MAIL_WORKER: z.stringbool().default(true),
+    /** First retry delay of a failed e-mail, doubled on each attempt (5 attempts). */
+    MAIL_RETRY_DELAY_MS: z.coerce.number().int().positive().default(10_000),
+    /** Prefix of the queue keys in Redis, so environments can share one Redis. */
+    QUEUE_PREFIX: z.string().min(1).default("bordo"),
     /** Public address of the web app, used in e-mailed links. */
     WEB_URL: z.url().default("http://localhost:3000"),
     TRUST_PROXY: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -55,6 +71,17 @@ export const envSchema = z
         path: ["DATABASE_URL"],
         message: "DATABASE_URL is required in production",
       });
+    }
+    if (env.NODE_ENV === "production") {
+      for (const key of ["MAIL_SMTP_URL", "MAIL_FROM"] as const) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: "custom",
+            path: [key],
+            message: `${key} is required in production`,
+          });
+        }
+      }
     }
     try {
       parseTrustProxy(env.TRUST_PROXY);

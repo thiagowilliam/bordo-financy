@@ -193,7 +193,7 @@ describe.skipIf(!databaseUrl)("auth (real Postgres)", () => {
 
   describe("password recovery", () => {
     const requestLink = async (email = "marina@email.com") => {
-      const { MailerService } = await import("../src/modules/auth/mailer.service.js");
+      const { MailerService } = await import("../src/modules/mail/mailer.service.js");
       const send = vi.spyOn(app.get(MailerService), "sendPasswordReset").mockResolvedValue();
       send.mockClear();
       const response = await post("/auth/forgot-password", { email });

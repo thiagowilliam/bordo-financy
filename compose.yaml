@@ -12,6 +12,14 @@ services:
       timeout: 3s
       retries: 10
 
+  # Development inbox: the API sends account e-mails here (SMTP on 1025) and you read them at
+  # http://localhost:8025. Nothing leaves your machine.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   postgres:
     image: postgres:18-alpine
     ports:

@@ -101,9 +101,30 @@ See "Photos" below for the routes. How files are stored:
 - **Every upload is decoded and written again** (`ImageService`, sharp): the declared type is not trusted, only JPEG, PNG (and WEBP for the profile photo) pass, decompression bombs are refused (50 MP), the image is turned upright and shrunk to 2560 px on the long side, and metadata is dropped, which for a travel photo includes the GPS position. Width and height go to the database.
 - **Local disk in containers is ephemeral.** `compose.yaml` mounts a volume at `/app/storage`. On ECS Fargate or Cloud Run use the S3 compatible driver instead (a task's disk does not survive).
 
-## Jobs
+## Mail
 
-BullMQ on Redis. First job: password recovery and e-mail change messages (template in the Pencil file). Retry with backoff, never block the request.
+`src/modules/mail`. Account e-mails go through a BullMQ queue on Redis and leave through SMTP.
+
+- **Callers** use `MailerService` (`sendPasswordReset`, `sendEmailChange`, `sendEmailChanged`). Each one only queues a job and never throws: the request that asked for the e-mail returns at once.
+- **Queue and worker** (`MailQueue`): queue `mail`, prefix `QUEUE_PREFIX` (default `bordo`). 5 attempts with exponential backoff starting at `MAIL_RETRY_DELAY_MS` (10 s). Finished jobs are removed immediately, so the e-mailed links do not stay in Redis; failed ones are kept for an hour (the links last an hour). The worker runs inside the API process (`MAIL_WORKER=false` turns it off to run it elsewhere). The job payload is validated again by the worker.
+- **Without Redis** (development) e-mails are sent inline. If Redis is down or slow when a job is queued, the e-mail is sent directly instead of being lost (an unlikely duplicate is the price). On shutdown the worker gets 3 seconds to finish, then the connections are cut, so a dead Redis cannot keep the process from exiting.
+- **Transport** (`MailTransport`): `SmtpTransport` (nodemailer) when `MAIL_SMTP_URL` is set, otherwise `LogTransport`, which prints the message (and its link) in the API log. Production requires `MAIL_SMTP_URL` and `MAIL_FROM`, so the log transport never runs there and a token never reaches production logs. Logs mask the address (`m***@gmail.com`).
+- **Templates** (`mail.templates.ts`): the layout of the "E-mail · Recuperação de senha" design (600 px, sand page, white card, coral button), table based with inline styles and a plain text version. Everything dynamic is HTML escaped. Three messages: password recovery, change of e-mail (to the new address), and a notice to the old address after the change.
+- **Development inbox:** `docker compose up -d mailpit redis`, set `MAIL_SMTP_URL=smtp://localhost:1025` in `apps/api/.env`, and read the messages at http://localhost:8025. Nothing leaves your machine.
+
+### Sending real e-mail (production)
+
+Any provider with SMTP works, the code does not change. The steps that need a person:
+
+1. Have a domain and access to its DNS.
+2. Create an account at the provider, add the domain, and publish the DNS records it shows (SPF, DKIM and, recommended, DMARC). Wait for it to say verified.
+   - **Resend:** API Keys, a key with sending access. `MAIL_SMTP_URL=smtps://resend:API_KEY@smtp.resend.com:465`.
+   - **Amazon SES:** pick the region, create the domain identity (DKIM records), **request production access** (in the sandbox it only sends to verified addresses), create SMTP credentials. `MAIL_SMTP_URL=smtps://SMTP_USER:SMTP_PASSWORD@email-smtp.<region>.amazonaws.com:465`.
+3. `MAIL_FROM="Bordo <nao-responda@yourdomain.com>"`, on the verified domain.
+4. Put both in the secret manager (never in the repo or in logs). In development they go in `apps/api/.env`.
+5. Send a recovery e-mail to a real inbox and check where it lands (inbox or spam).
+
+Open points: the notice sent to the old address says to contact "o suporte do Bordo", but there is no support address yet; define one and put it in that template. Sign-up does not send a verification e-mail (the contract does not ask for it), so `emailVerified` only becomes true through an e-mail change or Google.
 
 ## Phases
 
@@ -112,7 +133,7 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
 3. **Database.** Code done, not yet run against a real Postgres (Docker was off). Drizzle schema and first migration, Nest provider, readiness check, seed from the MSW fixtures, Postgres in Docker Compose. See "Database" below.
 4. **Auth.** In two parts.
    - **4a, done:** e-mail and password (sign-up, sign-in, sign-out, session, forgot and reset password), Argon2id, sessions, global auth guard with `@Public()`, strict rate limits that fail closed. See "Auth" below.
-   - **4b, next:** Google sign-in with state and PKCE (and the `google_email` it needs), recovery e-mails through BullMQ with a real transport.
+   - **4b, part 1 done:** mail delivery (BullMQ queue and SMTP transport, see "Mail") and the change of e-mail. **Left:** Google sign-in with state and PKCE (and the `google_email` it needs), which needs OAuth credentials.
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
    - **`profile`, done** (except photo and e-mail change, see "Profile").
    - **`categories`, done** (see "Categories").
@@ -126,8 +147,9 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
 Pieces that were postponed because they depend on infrastructure that comes later. Do them after the phases above, before or together with phase 6, and tick them here.
 
 - [ ] **Google sign-in** (phase 4b): authorization code flow with state and PKCE, `email` column on `oauth_accounts` (fills `profile.googleEmail`, today always `null`), the `account-exists` rule, `GET /api/auth/google` and its callback.
-- [ ] **Mail delivery** (phase 4b): BullMQ job and a real transport (Resend, SES or similar) behind `MailerService`. Until then the recovery link is only logged outside production.
-- [ ] **Change e-mail**: `POST /api/profile/email-change` plus the confirmation endpoint and the web page that opens the link. Needs the mail delivery above. Until then the "Alterar" e-mail button of the profile fails against the real API.
+- [x] **Mail delivery**: done (see "Mail"). What is left is the provider account, domain and credentials (see "Sending real e-mail").
+- [x] **Change e-mail**: done (see "Profile" and `docs/auth.md`).
+- [ ] **Support contact** in the "e-mail changed" notice (see "Mail").
 - [ ] **S3 compatible storage driver** (AWS S3 or Cloudflare R2): a second `StorageService`, `STORAGE_DRIVER=s3`, bucket, endpoint and credentials in env, `MEDIA_BASE_URL` pointing at the bucket or CDN. Needed before running more than one instance or on Fargate or Cloud Run.
 - [ ] **Oversized upload through the Next rewrite**: a file above the limit answers `413` straight from the API, but through the web app's rewrite the connection is reset and Next answers `500`. The web client already blocks files above 10 MB, so only other clients see it.
 - [ ] **Profile total in other currencies**: `profile/stats` only adds expenses in the main currency. Decide the exchange rate source (provider, daily snapshot, or rate stored on each expense) and sum everything.
@@ -202,7 +224,7 @@ Contract in `docs/auth.md`. How the API implements it (`src/modules/auth`):
 - **Guard:** `AuthGuard` is global and runs last. Routes opt out with `@Public()` (health, sign-up, sign-in, sign-out, forgot and reset). `@CurrentUser()` gives the user to the handler.
 - **Rate limits** (`StrictRateLimiter`, Redis, in memory without it): sign-in 20 per IP and 5 per e-mail in 15 min; sign-up and forgot password 10 per IP and 3 per e-mail per hour; reset 10 per IP per hour. E-mails are hashed in the keys. Unlike the global limit this one **fails closed**: if Redis breaks, the route answers `503`.
 - **Recovery:** one live link per account (a new request replaces the old), token stored hashed, 1 hour, single use (a conditional update makes it safe under concurrent requests). Resetting ends every session of the account. Google-only accounts can use it to add a password.
-- **E-mail:** `MailerService` has no provider yet. Outside production it logs the link; in production it logs nothing and warns. BullMQ and a real transport are phase 4b.
+- **E-mail:** recovery links are sent through the mail queue (see "Mail"). Without `MAIL_SMTP_URL` (development) the link is printed in the API log.
 - Validation errors are `400` with field paths (the MSW mocks answer `422`; the web client treats any 4xx as a failure, so this is fine).
 - Known gap: `profile.googleEmail` is always `null` until the Google flow stores the connected account's e-mail.
 
@@ -212,21 +234,25 @@ Tests (`test/auth.test.ts`) run against a real Postgres: `globalSetup` creates `
 
 `src/modules/profile`. All routes need a session and only touch the signed-in user's data.
 
-| Route                              | Notes                                                                                                                                                                                                                                        |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/profile`                 | The session user, in the shared `profileSchema` shape.                                                                                                                                                                                       |
-| `PATCH /api/profile`               | `name` and main `currency` only (`updateProfileSchema`). Unknown fields are dropped.                                                                                                                                                         |
-| `GET /api/profile/stats`           | Trips, days traveled (both ends counted), distinct destinations (case and space insensitive) and the total. See below.                                                                                                                       |
-| `GET /api/profile/export`          | CSV of every expense, same columns as the mock. UTF-8 with BOM, `no-store`. Amounts use the currency's decimals (`980.00` EUR, `4500` JPY). Cells that start with `=`, `+`, `-`, `@` get a leading quote so a spreadsheet does not run them. |
-| `POST /api/profile/password-reset` | Same single use link as recovery, sent to the signed-in user (also how a Google-only account adds a password). 3 per hour per account.                                                                                                       |
-| `PUT /api/profile/photo`           | `multipart/form-data`, one image under `photo` (JPG, PNG or WEBP, up to 5 MB). Replaces the previous one and deletes its file (a Google photo URL is not ours to delete). `DELETE /api/profile/photo` clears it.                             |
-| `DELETE /api/profile`              | Deletes the user, cascading to sessions, trips, expenses, photos and own categories, removes their stored files (profile and trip photos) and clears the cookie.                                                                             |
-
-Not built yet, on purpose:
-
-- `POST /api/profile/email-change`: needs the confirmation endpoint and a real mail transport (phase 4b).
+| Route                              | Notes                                                                                                                                                                                                                                                            |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/profile`                 | The session user, in the shared `profileSchema` shape.                                                                                                                                                                                                           |
+| `PATCH /api/profile`               | `name` and main `currency` only (`updateProfileSchema`). Unknown fields are dropped.                                                                                                                                                                             |
+| `GET /api/profile/stats`           | Trips, days traveled (both ends counted), distinct destinations (case and space insensitive) and the total. See below.                                                                                                                                           |
+| `GET /api/profile/export`          | CSV of every expense, same columns as the mock. UTF-8 with BOM, `no-store`. Amounts use the currency's decimals (`980.00` EUR, `4500` JPY). Cells that start with `=`, `+`, `-`, `@` get a leading quote so a spreadsheet does not run them.                     |
+| `POST /api/profile/password-reset` | Same single use link as recovery, sent to the signed-in user (also how a Google-only account adds a password). 3 per hour per account.                                                                                                                           |
+| `POST /api/profile/email-change`   | `{ email }`. Sends a single use link (1 hour, token stored hashed) to the NEW address; the e-mail only changes when it is confirmed (see below). Same answer if the address is the current one or has an account (nothing is sent then). 3 per hour per account. |
+| `PUT /api/profile/photo`           | `multipart/form-data`, one image under `photo` (JPG, PNG or WEBP, up to 5 MB). Replaces the previous one and deletes its file (a Google photo URL is not ours to delete). `DELETE /api/profile/photo` clears it.                                                 |
+| `DELETE /api/profile`              | Deletes the user, cascading to sessions, trips, expenses, photos and own categories, removes their stored files (profile and trip photos) and clears the cookie.                                                                                                 |
 
 `totalInCents` adds only the expenses made in the profile's main currency. There is no exchange rate source, and adding euros to reais would be wrong. When trips in other currencies matter here, rates become a decision (provider, daily snapshot or rate at the time of the expense).
+
+### Change of e-mail
+
+1. `POST /api/profile/email-change` (session) sends `WEB_URL/confirmar-email?token=...` to the new address. One pending change per account: a new request replaces the previous link.
+2. `GET /api/auth/email-change/:token` (public) returns `{ email }`, the address the link would switch the account to, or `410`. The web page checks it first and shows an explicit confirm button, so a mail scanner that only opens the link cannot spend it.
+3. `POST /api/auth/email-change/confirm` `{ token }` (public, the token is the credential) switches the address in one transaction: the e-mail counts as verified, **every session and pending recovery link of the account ends** (they were tied to the old address), and the browser's cookie is cleared. `410` expired or used, `409` if someone took the address meanwhile (nothing changes and the link stays valid), `429` after 10 attempts per hour per IP.
+4. After the change a notice goes to the old address, so a takeover does not go unnoticed.
 
 ## Categories
 
@@ -307,21 +333,26 @@ Rules the server enforces beyond the shared schema (`422`):
 
 Validated with Zod at boot (`src/config/env.ts`). The process exits with every problem listed. A `.env` file in `apps/api` is read outside production; real variables win.
 
-| Variable            | Default                 | Notes                                                                                        |
-| ------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
-| `NODE_ENV`          | `development`           | `production` turns off pretty logs and makes `REDIS_URL` mandatory                           |
-| `PORT`, `HOST`      | `3001`, `0.0.0.0`       |                                                                                              |
-| `LOG_LEVEL`         | `info`                  | `silent` in tests                                                                            |
-| `REDIS_URL`         | none                    | Rate limit storage and readiness check. Without it the limit is in memory (one process only) |
-| `DATABASE_URL`      | none                    | Postgres connection string. Optional in development and tests, mandatory in production       |
-| `DATABASE_POOL_MAX` | `10`                    | Connections per API instance                                                                 |
-| `STORAGE_DRIVER`    | `local`                 | Only `local` for now                                                                         |
-| `STORAGE_LOCAL_DIR` | `storage`               | Folder for uploaded files, relative to where the API starts. A volume in containers          |
-| `MEDIA_BASE_URL`    | `/api/media`            | Prefix of the photo URLs. The bucket or CDN address once an S3 compatible driver exists      |
-| `WEB_URL`           | `http://localhost:3000` | Public web address, used in e-mailed links                                                   |
-| `TRUST_PROXY`       | none                    | Addresses or CIDRs of the proxies in front of the API, comma separated. Never a number       |
-| `THROTTLE_TTL_MS`   | `60000`                 | Window of the global limit                                                                   |
-| `THROTTLE_LIMIT`    | `120`                   | Requests per window per client IP                                                            |
+| Variable              | Default                 | Notes                                                                                                               |
+| --------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`            | `development`           | `production` turns off pretty logs and makes `REDIS_URL` mandatory                                                  |
+| `PORT`, `HOST`        | `3001`, `0.0.0.0`       |                                                                                                                     |
+| `LOG_LEVEL`           | `info`                  | `silent` in tests                                                                                                   |
+| `REDIS_URL`           | none                    | Rate limit storage and readiness check. Without it the limit is in memory (one process only)                        |
+| `DATABASE_URL`        | none                    | Postgres connection string. Optional in development and tests, mandatory in production                              |
+| `DATABASE_POOL_MAX`   | `10`                    | Connections per API instance                                                                                        |
+| `STORAGE_DRIVER`      | `local`                 | Only `local` for now                                                                                                |
+| `STORAGE_LOCAL_DIR`   | `storage`               | Folder for uploaded files, relative to where the API starts. A volume in containers                                 |
+| `MEDIA_BASE_URL`      | `/api/media`            | Prefix of the photo URLs. The bucket or CDN address once an S3 compatible driver exists                             |
+| `MAIL_SMTP_URL`       | none                    | SMTP server as a URL (`smtps://user:password@host:465`). Required in production. Without it e-mails are only logged |
+| `MAIL_FROM`           | none                    | Sender, `Bordo <nao-responda@yourdomain.com>`. Required in production                                               |
+| `MAIL_WORKER`         | `true`                  | Run the e-mail worker in this process                                                                               |
+| `MAIL_RETRY_DELAY_MS` | `10000`                 | First retry delay of a failed e-mail, doubled each attempt (5 attempts)                                             |
+| `QUEUE_PREFIX`        | `bordo`                 | Prefix of the queue keys in Redis                                                                                   |
+| `WEB_URL`             | `http://localhost:3000` | Public web address, used in e-mailed links                                                                          |
+| `TRUST_PROXY`         | none                    | Addresses or CIDRs of the proxies in front of the API, comma separated. Never a number                              |
+| `THROTTLE_TTL_MS`     | `60000`                 | Window of the global limit                                                                                          |
+| `THROTTLE_LIMIT`      | `120`                   | Requests per window per client IP                                                                                   |
 
 ## What is in place
 
@@ -333,7 +364,7 @@ Validated with Zod at boot (`src/config/env.ts`). The process exits with every p
 - Logs are JSON in production and pretty in development. `authorization`, `cookie` and `set-cookie` are redacted.
 - `GET /api/health/ready` also checks Postgres (`select 1`).
 - Every route except health and the public auth routes needs a session (global `AuthGuard`).
-- Not done yet, by design: Google sign-in and e-mail delivery (phase 4b), Swagger (after the first domain).
+- Not done yet, by design: Google sign-in (phase 4b), Swagger (after the first domain).
 
 ## Where we stopped
 
@@ -341,7 +372,7 @@ Last updated 2026-10-29. Done and merged: phases 1 to 3, 4a (e-mail and password
 
 ### Next
 
-1. Phase 4b: Google sign-in and mail delivery (BullMQ and a provider). Needs Google OAuth credentials.
+1. Phase 4b, Google sign-in. Needs Google OAuth credentials. And the e-mail provider account and DNS (see "Sending real e-mail").
 2. The items under "Left for last": S3 compatible storage driver (AWS S3 or Cloudflare R2), change e-mail, profile total in other currencies, Swagger, `/termos` and `/privacidade` pages.
 3. The manual end to end pass of the whole app, once the above is done.
 

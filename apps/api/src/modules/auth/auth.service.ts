@@ -9,10 +9,11 @@ import { ConfigService } from "@nestjs/config";
 
 import { StrictRateLimiter } from "../../common/rate-limit/strict-rate-limiter.js";
 import type { Env } from "../../config/env.js";
-import { AUTH_LIMITS, RESET_TOKEN_TTL_MS } from "./auth.constants.js";
+import { AUTH_LIMITS, EMAIL_CHANGE_TOKEN_TTL_MS, RESET_TOKEN_TTL_MS } from "./auth.constants.js";
 import { isUniqueViolation } from "../../database/errors.js";
 import { AuthRepository, toSessionUser } from "./auth.repository.js";
-import { MailerService } from "./mailer.service.js";
+import { MailerService } from "../mail/mailer.service.js";
+import type { SessionUser } from "./session-user.js";
 import { PasswordService } from "./password.service.js";
 import { SessionsService } from "./sessions.service.js";
 import { generateToken, hashEmail, hashToken } from "./tokens.js";
@@ -112,6 +113,61 @@ export class AuthService {
     await this.limiter.hit(`forgot:user:${user.id}`, limits.email.limit, limits.email.windowMs);
     await this.sendResetLink(user);
     return { email: user.email };
+  }
+
+  /**
+   * Starts a change of the login e-mail: a single use link goes to the NEW address. Nothing changes
+   * until it is opened. The answer is the same when the address is the current one or belongs to
+   * another account (and then nothing is sent), so this cannot be used to find out who has an account.
+   */
+  async requestEmailChange(user: SessionUser, input: { email: string }) {
+    const limits = AUTH_LIMITS.emailChange;
+    await this.limiter.hit(`email-change:user:${user.id}`, limits.user.limit, limits.user.windowMs);
+
+    const newEmail = normalizeEmail(input.email);
+    const isSame = newEmail === normalizeEmail(user.email);
+    if (!isSame && !(await this.repository.findUserByEmail(newEmail))) {
+      const token = generateToken();
+      await this.repository.replaceEmailChangeToken({
+        tokenHash: hashToken(token),
+        userId: user.id,
+        newEmail,
+        expiresAt: new Date(Date.now() + EMAIL_CHANGE_TOKEN_TTL_MS),
+      });
+      const link = new URL("/confirmar-email", this.config.get("WEB_URL", { infer: true }));
+      link.searchParams.set("token", token);
+      void this.mailer.sendEmailChange(newEmail, link.toString()).catch(() => undefined);
+    }
+    return { email: input.email.trim() };
+  }
+
+  async checkEmailChangeToken(token: string) {
+    const found = await this.repository.findValidEmailChange(hashToken(token));
+    if (!found) throw this.linkExpired();
+    return { email: found.newEmail };
+  }
+
+  /** The link was opened and confirmed. Public: the token is the credential, a session is not needed. */
+  async confirmEmailChange(token: string, client: ClientInfo) {
+    const limits = AUTH_LIMITS.confirmEmailChange;
+    await this.limiter.hit(
+      `email-change-confirm:ip:${client.ip}`,
+      limits.ip.limit,
+      limits.ip.windowMs,
+    );
+
+    let changed;
+    try {
+      changed = await this.repository.consumeEmailChange(hashToken(token));
+    } catch (error) {
+      if (isUniqueViolation(error)) throw this.emailInUse();
+      throw error;
+    }
+    if (!changed) throw this.linkExpired();
+
+    // To the old address, so a takeover does not go unnoticed.
+    void this.mailer.sendEmailChanged(changed.oldEmail, changed.newEmail).catch(() => undefined);
+    return { email: changed.newEmail };
   }
 
   private async sendResetLink(user: { id: string; email: string }) {

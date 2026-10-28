@@ -1,4 +1,5 @@
 export {
+  useConfirmEmailChange,
   useRequestPasswordRecovery,
   useResetPassword,
   useSignIn,
@@ -6,7 +7,7 @@ export {
   useSignUp,
 } from "./api/mutations";
 export { getGoogleUrl } from "./api/client";
-export { useResetToken } from "./api/queries";
+export { useEmailChangeToken, useResetToken } from "./api/queries";
 export { useGoogleAuth } from "./hooks/use-google-auth";
 export { SIGNED_OUT_PARAM, useSignOutFlow } from "./hooks/use-sign-out-flow";
 export type { SignOutFlow } from "./hooks/use-sign-out-flow";
@@ -28,6 +29,7 @@ export type {
   SignInInput,
   SignUpInput,
 } from "./types";
+export { ConfirmEmailScreen } from "./components/confirm-email-screen";
 export { ForgotPasswordScreen } from "./components/forgot-password-screen";
 export { ResetPasswordScreen } from "./components/reset-password-screen";
 export { SignOutConfirmDialog } from "./components/sign-out-confirm-dialog";

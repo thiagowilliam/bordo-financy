@@ -4,9 +4,16 @@ import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MOCK_EXPIRED_TOKEN, MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
+import {
+  MOCK_EMAIL_TAKEN_TOKEN,
+  MOCK_EXPIRED_TOKEN,
+  MOCK_WRONG_PASSWORD,
+} from "@/mocks/handlers/auth";
 import { server } from "@/mocks/server";
 
+import { http, HttpResponse } from "msw";
+
+import { ConfirmEmailScreen } from "./confirm-email-screen";
 import { ForgotPasswordScreen } from "./forgot-password-screen";
 import { ResetPasswordScreen } from "./reset-password-screen";
 import { SignInScreen } from "./sign-in-screen";
@@ -219,5 +226,79 @@ describe("ResetPasswordScreen", () => {
       "href",
       "/entrar",
     );
+  });
+});
+
+describe("ConfirmEmailScreen", () => {
+  const confirm = () => screen.getByRole("button", { name: "Confirmar novo e-mail" });
+
+  it("checks the link, then offers to confirm the new address", async () => {
+    renderWithClient(<ConfirmEmailScreen token="abc" />);
+    expect(screen.getByRole("status", { name: "Verificando o link" })).toBeInTheDocument();
+    expect(await screen.findByText("novo@email.com")).toBeInTheDocument();
+    expect(confirm()).toBeEnabled();
+  });
+
+  it("confirms and offers to sign in again", async () => {
+    renderWithClient(<ConfirmEmailScreen token="abc" />);
+    await screen.findByText("novo@email.com");
+    await userEvent.click(confirm());
+
+    expect(await screen.findByRole("heading", { name: "E-mail atualizado" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar no Bordo" })).toHaveAttribute(
+      "href",
+      "/entrar",
+    );
+  });
+
+  it("clears the whole query cache once confirmed", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(["profile"], { id: "old" });
+    render(
+      <QueryClientProvider client={client}>
+        <ConfirmEmailScreen token="abc" />
+      </QueryClientProvider>,
+    );
+    await screen.findByText("novo@email.com");
+    await userEvent.click(confirm());
+    await screen.findByRole("heading", { name: "E-mail atualizado" });
+    expect(client.getQueryData(["profile"])).toBeUndefined();
+  });
+
+  it("shows the expired state for a spent link", async () => {
+    renderWithClient(<ConfirmEmailScreen token={MOCK_EXPIRED_TOKEN} />);
+    expect(await screen.findByRole("heading", { name: "Este link expirou" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir para o perfil" })).toHaveAttribute(
+      "href",
+      "/perfil",
+    );
+  });
+
+  it("treats a missing token as expired", () => {
+    renderWithClient(<ConfirmEmailScreen />);
+    expect(screen.getByRole("heading", { name: "Este link expirou" })).toBeInTheDocument();
+  });
+
+  it("explains when the address is now used by another account", async () => {
+    renderWithClient(<ConfirmEmailScreen token={MOCK_EMAIL_TAKEN_TOKEN} />);
+    await screen.findByText("novo@email.com");
+    await userEvent.click(confirm());
+    expect(
+      await screen.findByText("Este e-mail já está em uso por outra conta."),
+    ).toBeInTheDocument();
+    expect(confirm()).toBeEnabled();
+  });
+
+  it("shows a generic error and keeps the button usable", async () => {
+    server.use(
+      http.post("/api/auth/email-change/confirm", () => new HttpResponse(null, { status: 500 })),
+    );
+    renderWithClient(<ConfirmEmailScreen token="abc" />);
+    await screen.findByText("novo@email.com");
+    await userEvent.click(confirm());
+    expect(
+      await screen.findByText("Não foi possível confirmar agora. Tente novamente."),
+    ).toBeInTheDocument();
+    expect(confirm()).toBeEnabled();
   });
 });

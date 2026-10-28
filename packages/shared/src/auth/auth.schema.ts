@@ -65,3 +65,12 @@ export const resetTokenSchema = z.object({ email: z.string() });
 export const googleErrorSchema = z.enum(["google", "account-exists"]);
 
 export const googleRedirectSchema = z.object({ redirectTo: z.string() });
+
+/** Body of `POST /api/auth/email-change/confirm`: the token of the link e-mailed to the new address. */
+export const confirmEmailChangeSchema = z.object({ token: z.string().min(1) });
+
+/** `GET /api/auth/email-change/:token`: the address that link would switch the account to. */
+export const emailChangeTokenSchema = z.object({ email: z.string() });
+
+/** `POST /api/auth/email-change/confirm`: the account's new address. */
+export const emailChangedSchema = z.object({ email: z.string() });

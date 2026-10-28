@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Req, Res } from "@nestjs/common";
 import {
+  confirmEmailChangeSchema,
   forgotPasswordSchema,
   resetPasswordBodySchema,
   signInSchema,
@@ -19,6 +20,7 @@ class SignInDto extends createZodDto(signInSchema) {}
 class SignUpDto extends createZodDto(signUpBodySchema) {}
 class ForgotPasswordDto extends createZodDto(forgotPasswordSchema) {}
 class ResetPasswordDto extends createZodDto(resetPasswordBodySchema) {}
+class ConfirmEmailChangeDto extends createZodDto(confirmEmailChangeSchema) {}
 
 const clientOf = (request: FastifyRequest) => ({
   ip: request.ip,
@@ -80,6 +82,27 @@ export class AuthController {
   @Get("reset-password/:token")
   checkResetToken(@Param("token") token: string) {
     return this.auth.checkResetToken(token);
+  }
+
+  /** The address a confirmation link would switch the account to. */
+  @Public()
+  @Get("email-change/:token")
+  checkEmailChange(@Param("token") token: string) {
+    return this.auth.checkEmailChangeToken(token);
+  }
+
+  /** Ends every session of the account, so the browser's cookie is cleared too. */
+  @Public()
+  @Post("email-change/confirm")
+  @HttpCode(200)
+  async confirmEmailChange(
+    @Body() body: ConfirmEmailChangeDto,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const result = await this.auth.confirmEmailChange(body.token, clientOf(request));
+    clearSessionCookie(reply);
+    return result;
   }
 
   @Public()

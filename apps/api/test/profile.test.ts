@@ -296,7 +296,7 @@ describe.skipIf(!databaseUrl)("profile (real Postgres)", () => {
   describe("POST /profile/password-reset", () => {
     it("e-mails a single use link to the signed-in user and it works", async () => {
       const { cookie } = await signUp();
-      const { MailerService } = await import("../src/modules/auth/mailer.service.js");
+      const { MailerService } = await import("../src/modules/mail/mailer.service.js");
       const send = vi.spyOn(app.get(MailerService), "sendPasswordReset").mockResolvedValue();
 
       const response = await request("POST", "/profile/password-reset", cookie);

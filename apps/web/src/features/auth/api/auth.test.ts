@@ -1,10 +1,16 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { ApiError } from "@/lib/api-client";
-import { MOCK_EXPIRED_TOKEN, MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
+import {
+  MOCK_EMAIL_TAKEN_TOKEN,
+  MOCK_EXPIRED_TOKEN,
+  MOCK_WRONG_PASSWORD,
+} from "@/mocks/handlers/auth";
 import { server } from "@/mocks/server";
 
 import {
+  confirmEmailChange,
+  fetchEmailChangeToken,
   fetchSession,
   fetchResetToken,
   getGoogleUrl,
@@ -61,5 +67,13 @@ describe("auth api (msw)", () => {
     await expect(
       resetPassword({ token: MOCK_EXPIRED_TOKEN, password: "Senha#1234" }),
     ).rejects.toMatchObject({ status: 410 });
+  });
+
+  it("confirms an e-mail change and refuses spent or taken ones", async () => {
+    expect(await fetchEmailChangeToken("abc")).toEqual({ email: "novo@email.com" });
+    expect(await confirmEmailChange("abc")).toEqual({ email: "novo@email.com" });
+    await expect(fetchEmailChangeToken(MOCK_EXPIRED_TOKEN)).rejects.toMatchObject({ status: 410 });
+    await expect(confirmEmailChange(MOCK_EXPIRED_TOKEN)).rejects.toMatchObject({ status: 410 });
+    await expect(confirmEmailChange(MOCK_EMAIL_TAKEN_TOKEN)).rejects.toMatchObject({ status: 409 });
   });
 });

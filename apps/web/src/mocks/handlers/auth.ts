@@ -11,6 +11,9 @@ export const MOCK_WRONG_PASSWORD = "senha-incorreta";
 /** A recovery link with this token is expired, to exercise that state. */
 export const MOCK_EXPIRED_TOKEN = "expirado";
 
+/** Confirming an e-mail change with this token answers that the address is taken (409). */
+export const MOCK_EMAIL_TAKEN_TOKEN = "email-em-uso";
+
 export const MOCK_GOOGLE_EMAIL = "marina@gmail.com";
 
 const bodySchema = signInSchema;
@@ -61,6 +64,19 @@ export const authHandlers = [
     });
     if (!password.success) return new HttpResponse(null, { status: 422 });
     return HttpResponse.json({});
+  }),
+
+  http.get("/api/auth/email-change/:token", ({ params }) =>
+    params.token === MOCK_EXPIRED_TOKEN
+      ? new HttpResponse(null, { status: 410 })
+      : HttpResponse.json({ email: "novo@email.com" }),
+  ),
+
+  http.post("/api/auth/email-change/confirm", async ({ request }) => {
+    const body = (await request.json()) as { token?: string };
+    if (body.token === MOCK_EXPIRED_TOKEN) return new HttpResponse(null, { status: 410 });
+    if (body.token === MOCK_EMAIL_TAKEN_TOKEN) return new HttpResponse(null, { status: 409 });
+    return HttpResponse.json({ email: "novo@email.com" });
   }),
 
   // The real endpoint answers a 302 to Google. A navigation cannot be mocked, so while mocking the

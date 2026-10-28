@@ -9,6 +9,7 @@ export const SESSION_TTL_MS = 30 * DAY;
 export const SESSION_REFRESH_AFTER_MS = DAY;
 
 export const RESET_TOKEN_TTL_MS = HOUR;
+export const EMAIL_CHANGE_TOKEN_TTL_MS = HOUR;
 
 /** Per window limits. `ip` and `email` are counted separately, both must pass. */
 export const AUTH_LIMITS = {
@@ -16,4 +17,6 @@ export const AUTH_LIMITS = {
   signUp: { ip: { limit: 10, windowMs: HOUR }, email: { limit: 3, windowMs: HOUR } },
   forgotPassword: { ip: { limit: 10, windowMs: HOUR }, email: { limit: 3, windowMs: HOUR } },
   resetPassword: { ip: { limit: 10, windowMs: HOUR } },
+  emailChange: { user: { limit: 3, windowMs: HOUR } },
+  confirmEmailChange: { ip: { limit: 10, windowMs: HOUR } },
 } as const;

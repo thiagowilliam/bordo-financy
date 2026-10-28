@@ -32,19 +32,21 @@ Browser ──/api/auth/*──▶ Next (rewrite, same origin) ──▶ Node ba
 
 ## Endpoints (contract used by `src/features/auth/api/client.ts`)
 
-| Method and path                  | Body                  | Answer                                                                               |
-| -------------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `POST /api/auth/sign-up`         | `{ email, password }` | `201` user + cookie. `409` e-mail in use                                             |
-| `POST /api/auth/sign-in`         | `{ email, password }` | `200` user + cookie. `401` wrong data                                                |
-| `POST /api/auth/sign-out`        |                       | `200 {}` and clears the cookie                                                       |
-| `GET  /api/auth/session`         |                       | `200` user, or `401`                                                                 |
-| `POST /api/auth/forgot-password` | `{ email }`           | Always `200 { email }` (no enumeration)                                              |
-| `GET  /api/auth/google`          | `?next=/path`         | `302` to Google                                                                      |
-| `GET  /api/auth/google/callback` |                       | creates or links the user, sets cookie, `302` to `next` (new users to `/onboarding`) |
+| Method and path                       | Body                  | Answer                                                                               |
+| ------------------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| `POST /api/auth/sign-up`              | `{ email, password }` | `201` user + cookie. `409` e-mail in use                                             |
+| `POST /api/auth/sign-in`              | `{ email, password }` | `200` user + cookie. `401` wrong data                                                |
+| `POST /api/auth/sign-out`             |                       | `200 {}` and clears the cookie                                                       |
+| `GET  /api/auth/session`              |                       | `200` user, or `401`                                                                 |
+| `POST /api/auth/forgot-password`      | `{ email }`           | Always `200 { email }` (no enumeration)                                              |
+| `GET  /api/auth/email-change/:token`  |                       | `200 { email }` (the new address) or `410`. Public                                   |
+| `POST /api/auth/email-change/confirm` | `{ token }`           | `200 { email }`, ends every session and clears the cookie. `410`, `409`. Public      |
+| `GET  /api/auth/google`               | `?next=/path`         | `302` to Google                                                                      |
+| `GET  /api/auth/google/callback`      |                       | creates or links the user, sets cookie, `302` to `next` (new users to `/onboarding`) |
 
 "user" is the `profileSchema` of `src/features/profile` (`id, name, email, emailVerified, photoUrl, currency, authProvider, createdAt`). Logged-in profile endpoints (`/api/profile/*`) are already specified there, including `POST /api/profile/password-reset` and `POST /api/profile/email-change`.
 
-Password recovery: `forgot-password` e-mails a single-use link (token stored hashed, 1 hour) to `/recuperar-senha/nova?token=...`, which first calls `GET /api/auth/reset-password/:token`. The e-mail template is in the Pencil file ("E-mail · Recuperação de senha"). The new password must meet the four rules in `src/lib/password-strength.ts` (8+ characters, upper and lower case, a number, a special character): validate them again in the backend. The "Confira seu e-mail" screen allows resending after 45 seconds; rate limit it server side too.
+Password recovery: `forgot-password` e-mails a single-use link (token stored hashed, 1 hour) to `/recuperar-senha/nova?token=...`, which first calls `GET /api/auth/reset-password/:token`. The e-mail follows the Pencil template ("E-mail · Recuperação de senha") and is sent through the mail queue (see `docs/backend.md`, "Mail"). The new password must meet the four rules in `src/lib/password-strength.ts` (8+ characters, upper and lower case, a number, a special character): validate them again in the backend. The "Confira seu e-mail" screen allows resending after 45 seconds; rate limit it server side too.
 
 ## Google and the "pre-registration"
 

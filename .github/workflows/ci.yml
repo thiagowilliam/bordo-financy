@@ -27,6 +27,16 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      # The mail queue tests run against a real Redis.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -41,7 +51,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
         env:
-          # A missing database must fail the run here, not skip the tests.
+          # A missing database or Redis must fail the run here, not skip the tests.
           REQUIRE_DATABASE: "1"
       - run: pnpm build
 
