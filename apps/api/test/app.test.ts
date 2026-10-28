@@ -207,4 +207,14 @@ describe("rate limit", () => {
 
     expect((await app.inject({ url: "/api/test/ping" })).statusCode).toBe(200);
   });
+
+  it("accepts a JSON content type on a request with no body", async () => {
+    app = await createTestApp();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/test/empty",
+      headers: { "content-type": "application/json" },
+    });
+    expect(response.statusCode).toBe(201);
+  });
 });

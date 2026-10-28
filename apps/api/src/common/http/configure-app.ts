@@ -16,6 +16,12 @@ export async function configureApp(app: NestFastifyApplication) {
     .getInstance()
     .addHook("onRequest", async (request, reply) => {
       reply.header("x-request-id", request.id);
+      // Fastify answers 400 to a request that declares JSON but has no body (a bodyless POST sent
+      // with a JSON content type, like sign out). No body means no content type to parse.
+      const hasBody =
+        request.headers["transfer-encoding"] !== undefined ||
+        Number(request.headers["content-length"] ?? 0) > 0;
+      if (!hasBody) delete request.headers["content-type"];
     });
   app.enableShutdownHooks();
 }

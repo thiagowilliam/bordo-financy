@@ -19,7 +19,9 @@ Browser ──/api/auth/*──▶ Next (rewrite, same origin) ──▶ Node ba
 ```
 
 - `next.config.ts` rewrites `/api/*` to `BACKEND_URL` when it is set, so the cookie is first-party and there is no CORS. In development MSW answers `/api/*` instead (`NEXT_PUBLIC_API_MOCKING=disabled` turns it off).
-- `src/proxy.ts` redirects early using only the cookie: signed-out users on `/viagens`, `/perfil`, `/configuracoes`, `/onboarding` go to `/entrar?next=...`; signed-in users on `/entrar`, `/criar-conta`, `/recuperar-senha` go to `/viagens`. The rules live in `src/lib/auth-routes.ts`. It is skipped while mocking.
+- `src/proxy.ts` redirects early using only the cookie: signed-out users on `/viagens`, `/perfil`, `/configuracoes`, `/onboarding` go to `/entrar?next=...`; signed-in users on `/` (the landing page), `/entrar`, `/criar-conta`, `/recuperar-senha` go to `/viagens`, so a returning visitor lands on the trips. The rules live in `src/lib/auth-routes.ts`. It is skipped while mocking.
+- A stale cookie (expired or revoked session) would loop `/entrar` to `/viagens` and back, so the backend clears `bordo_session` on the `401` it answers, and a global `QueryCache` `onError` sends the user to `/entrar?next=...` when any query gets a `401`.
+- The login survives closing the browser: the cookie has a 30 day `Max-Age` and slides while the user keeps coming back.
 - The proxy is not the security boundary. Every `/api/*` route validates the session in the backend.
 
 ## Session

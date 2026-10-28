@@ -24,7 +24,11 @@ export async function apiFetch<TSchema extends z.ZodType>(
   const isFormData = body instanceof FormData;
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     ...init,
-    headers: isFormData ? headers : { "Content-Type": "application/json", ...headers },
+    // Only a JSON body declares JSON: the backend rejects an empty body that claims to be JSON.
+    headers:
+      body === undefined || isFormData
+        ? headers
+        : { "Content-Type": "application/json", ...headers },
     body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
   });
   if (!response.ok) throw new ApiError(response.status, response.statusText);

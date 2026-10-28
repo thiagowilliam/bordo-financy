@@ -122,6 +122,27 @@ describe.skipIf(!databaseUrl)("auth (real Postgres)", () => {
       expect(after.statusCode).toBe(401);
     });
 
+    it("clears the cookie when it points to an unknown or expired session", async () => {
+      const { cookie } = await signUp();
+      await sql`update sessions set expires_at = now() - interval '1 minute'`;
+      const response = await app.inject({ url: "/api/auth/session", headers: { cookie } });
+      expect(response.statusCode).toBe(401);
+      expect(response.cookies.find((item) => item.name === "bordo_session")?.value).toBe("");
+    });
+
+    it("signs out with a JSON content type and no body, like the web client does", async () => {
+      const { cookie } = await signUp();
+      const out = await app.inject({
+        method: "POST",
+        url: "/api/auth/sign-out",
+        headers: { cookie, "content-type": "application/json" },
+      });
+      expect(out.statusCode).toBe(200);
+      expect((await app.inject({ url: "/api/auth/session", headers: { cookie } })).statusCode).toBe(
+        401,
+      );
+    });
+
     it("answers 401 without a cookie or with a made up one", async () => {
       expect((await app.inject({ url: "/api/auth/session" })).statusCode).toBe(401);
       const fake = await app.inject({
