@@ -2,6 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 
+import { DatabaseHealthIndicator } from "./database.health.js";
 import { RedisHealthIndicator } from "./redis.health.js";
 
 @Controller("health")
@@ -10,6 +11,7 @@ export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly redis: RedisHealthIndicator,
+    private readonly database: DatabaseHealthIndicator,
   ) {}
 
   /** Liveness: the process is up. Used by the container restart policy. */
@@ -23,6 +25,9 @@ export class HealthController {
   @Get("ready")
   @HealthCheck()
   ready() {
-    return this.health.check([() => this.redis.isHealthy("redis")]);
+    return this.health.check([
+      () => this.redis.isHealthy("redis"),
+      () => this.database.isHealthy("database"),
+    ]);
   }
 }

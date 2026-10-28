@@ -33,6 +33,8 @@ WORKDIR /app
 COPY --from=build --chown=node:node /out/package.json ./
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
 COPY --from=build --chown=node:node /out/dist ./dist
+# SQL migrations, applied by `node dist/database/migrate.js` as a deploy step (never on API boot).
+COPY --from=build --chown=node:node /out/migrations ./migrations
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \

@@ -12,6 +12,7 @@ import { SafeThrottlerGuard } from "./common/guards/safe-throttler.guard.js";
 import { REDIS, type RedisClient } from "./common/redis/redis.module.js";
 import { RedisModule } from "./common/redis/redis.module.js";
 import { type Env, validateEnv } from "./config/env.js";
+import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
 
 const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
@@ -20,6 +21,7 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
     RedisModule,
+    DatabaseModule,
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => {
