@@ -152,8 +152,8 @@ Other tokens: `muted-foreground` `#5E7275`, `subtle-foreground` `#94A3A5`, `bord
 
 ## Setup decisions
 
-- MSW 3: import `http`/`HttpResponse` from `msw/http`, `setupWorker` from `msw/browser`, option `onUnhandledFrame`. Mocks run only in development (`NEXT_PUBLIC_API_MOCKING=disabled` turns them off). `next.config.ts` aliases `msw/browser` for Turbopack's SSR pass.
-- `/api/*` is served by MSW. Handlers and fixtures live in `src/mocks`; every feature's client function parses responses with its Zod schema.
+- MSW 3: import `http`/`HttpResponse` from `msw/http`, `setupWorker` from `msw/browser`, option `onUnhandledFrame`. The web app talks to the real API by default (`BACKEND_URL`, `http://localhost:3001` in development). The mocks are opt-in, development only (`NEXT_PUBLIC_API_MOCKING=enabled`). `next.config.ts` aliases `msw/browser` for Turbopack's SSR pass.
+- `/api/*` is proxied to the API; with the mocks on it is served by MSW instead. Handlers and fixtures live in `src/mocks`; every feature's client function parses responses with its Zod schema.
 - Base costs are expenses with `kind: "BASE"`. Daily expenses are `kind: "DAILY"`.
 - Client components that receive icons from a Server Component take rendered elements (`icon: <MapPin />`), not component references.
 - Vitest config is `vitest.config.mts` (`resolve.tsconfigPaths`). Testing Library cleanup runs in `vitest.setup.ts`.
