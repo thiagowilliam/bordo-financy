@@ -1,6 +1,14 @@
-export const MAX_PHOTOS = 10;
-export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-export const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png"] as const;
+import {
+  AVATAR_MAX_BYTES,
+  AVATAR_TYPES,
+  MAX_PHOTO_BYTES,
+  MAX_PHOTOS,
+  PHOTO_TYPES,
+} from "@bordo/shared/photos";
+
+// The limits live in the shared package: the API enforces the same numbers.
+export { AVATAR_MAX_BYTES, MAX_PHOTO_BYTES, MAX_PHOTOS };
+export const ACCEPTED_PHOTO_TYPES = PHOTO_TYPES;
 
 export type PhotoFilterResult = {
   accepted: File[];
@@ -25,8 +33,7 @@ export function filterPhotoFiles(files: File[], currentCount: number): PhotoFilt
   };
 }
 
-export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
-export const AVATAR_ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const AVATAR_ACCEPTED_TYPES = AVATAR_TYPES;
 
 /** True when the file is a JPG, PNG or WEBP of up to 5 MB. */
 export function isValidAvatarFile(file: File): boolean {

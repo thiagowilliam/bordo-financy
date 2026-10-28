@@ -197,14 +197,16 @@ describe.skipIf(!databaseUrl)("trips (real Postgres)", () => {
       expect((await call("GET", "/trips", cookie)).json()[0].spentInCents).toBe(400);
     });
 
-    it("does not return a bare storage key as a photo url", async () => {
+    it("turns a storage key into a media url", async () => {
       const { cookie, id } = await signUp();
       await seedTrip(
         id,
         { name: "Lisboa", start: "2026-10-12", end: "2026-10-26" },
         { cover: "trips/abc/cover.jpg" },
       );
-      expect((await call("GET", "/trips", cookie)).json()[0].coverPhotoUrl).toBeNull();
+      expect((await call("GET", "/trips", cookie)).json()[0].coverPhotoUrl).toBe(
+        "/api/media/trips/abc/cover.jpg",
+      );
     });
 
     it("only lists the signed-in user's trips and expenses", async () => {

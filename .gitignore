@@ -24,6 +24,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# uploaded files (local storage driver of the API)
+/apps/api/storage/
+
 # local env files
 .env*.local
 .env

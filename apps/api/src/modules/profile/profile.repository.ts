@@ -2,7 +2,7 @@ import { Inject, Injectable, ServiceUnavailableException } from "@nestjs/common"
 import { and, asc, countDistinct, eq, sql } from "drizzle-orm";
 
 import { DATABASE, type Database } from "../../database/database.module.js";
-import { expenses, trips, users } from "../../database/schema/index.js";
+import { expenses, photos, trips, users } from "../../database/schema/index.js";
 import type { UserRow } from "../auth/auth.repository.js";
 
 /** The only place that talks to Drizzle for the profile: account data, history and export. */
@@ -35,6 +35,37 @@ export class ProfileRepository {
       await tx.delete(trips).where(eq(trips.userId, userId));
       await tx.delete(users).where(eq(users.id, userId));
     });
+  }
+
+  /** Replaces the profile photo. Returns the updated user and what the photo was before. */
+  async setPhoto(userId: string, photoUrl: string | null) {
+    return this.db.transaction(async (tx) => {
+      const [before] = await tx
+        .select({ photoUrl: users.photoUrl })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for("update");
+      const [user] = await tx
+        .update(users)
+        .set({ photoUrl })
+        .where(eq(users.id, userId))
+        .returning();
+      return { user: user ?? null, previous: before?.photoUrl ?? null };
+    });
+  }
+
+  /** Every stored file of the user: the profile photo and the photos of their trips. */
+  async storedFileKeys(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ key: photos.storageKey })
+      .from(photos)
+      .innerJoin(trips, eq(trips.id, photos.tripId))
+      .where(eq(trips.userId, userId));
+    const [user] = await this.db
+      .select({ photoUrl: users.photoUrl })
+      .from(users)
+      .where(eq(users.id, userId));
+    return [...rows.map((row) => row.key), ...(user?.photoUrl ? [user.photoUrl] : [])];
   }
 
   /** Trips, days (both ends counted) and distinct destinations of the user. */

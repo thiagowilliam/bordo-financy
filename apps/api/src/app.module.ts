@@ -7,6 +7,7 @@ import { ZodValidationPipe } from "nestjs-zod";
 import { LoggerModule } from "nestjs-pino";
 
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter.js";
+import { StorageModule } from "./common/storage/storage.module.js";
 import { RateLimitModule } from "./common/rate-limit/rate-limit.module.js";
 import { JsonContentTypeGuard } from "./common/guards/json-content-type.guard.js";
 import { SafeThrottlerGuard } from "./common/guards/safe-throttler.guard.js";
@@ -17,6 +18,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import { AuthGuard } from "./modules/auth/auth.guard.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { CategoriesModule } from "./modules/categories/categories.module.js";
+import { PhotosModule } from "./modules/photos/photos.module.js";
 import { ExpensesModule } from "./modules/expenses/expenses.module.js";
 import { TripsModule } from "./modules/trips/trips.module.js";
 import { ProfileModule } from "./modules/profile/profile.module.js";
@@ -37,6 +39,7 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
     RedisModule,
     DatabaseModule,
     RateLimitModule,
+    StorageModule,
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => {
@@ -87,6 +90,7 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
     CategoriesModule,
     TripsModule,
     ExpensesModule,
+    PhotosModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

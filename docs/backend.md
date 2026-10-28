@@ -90,9 +90,16 @@ Final columns come from the shared schemas. Add indexes for `expenses(trip_id, s
 
 The surface is the one in `apps/web/src/mocks/handlers`: `auth`, `profile`, `categories`, `trips`, `trips/:tripId/expenses`, `trips/:tripId/base-costs`, `trips/:tripId/photos`, `trips/:tripId/cover`. The handler files are the spec while the API is built. Swagger is generated from the shared schemas once the API exists.
 
-## Photos
+## Photos and storage
 
-Upload to object storage with pre-signed URLs. The API issues the URL and stores metadata; it does not proxy file bytes. Validate type and size when issuing the URL and again when confirming the upload.
+See "Photos" below for the routes. How files are stored:
+
+- **Behind an interface.** `StorageService` (`put`, `delete`) is the only thing the modules know. Today the driver is `local`, a folder on disk (`STORAGE_LOCAL_DIR`). An S3 compatible driver is the next one: AWS S3, or Cloudflare R2 (R2 is Cloudflare's, not AWS, but it speaks the S3 API, so the same driver and SDK serve both; only endpoint, credentials and the public address change).
+- **Keys** are `trips/<tripId>/<uuid>.<ext>` and `avatars/<userId>/<uuid>.<ext>`. The random part makes URLs unguessable, which is what lets the files be public like a bucket or CDN would be. Only keys of that shape are accepted by the disk driver, which is what keeps path traversal out.
+- **URLs.** The database stores the key; the API turns it into a URL with `MEDIA_BASE_URL` (default `/api/media`, served by the API itself). With a bucket, set it to the bucket or CDN address and the same rows keep working. Absolute URLs already stored (a Google profile photo, the dev seed) are returned as they are.
+- **Uploads go through the API** as `multipart/form-data` (this is what the web client already sends), not through pre-signed URLs, which the first plan assumed. The API is the place that can check what the file really is. Pre-signed uploads can come later as an optimization if the size or traffic asks for it, at the price of a new contract and a confirm step.
+- **Every upload is decoded and written again** (`ImageService`, sharp): the declared type is not trusted, only JPEG, PNG (and WEBP for the profile photo) pass, decompression bombs are refused (50 MP), the image is turned upright and shrunk to 2560 px on the long side, and metadata is dropped, which for a travel photo includes the GPS position. Width and height go to the database.
+- **Local disk in containers is ephemeral.** `compose.yaml` mounts a volume at `/app/storage`. On ECS Fargate or Cloud Run use the S3 compatible driver instead (a task's disk does not survive).
 
 ## Jobs
 
@@ -110,7 +117,8 @@ BullMQ on Redis. First job: password recovery and e-mail change messages (templa
    - **`profile`, done** (except photo and e-mail change, see "Profile").
    - **`categories`, done** (see "Categories").
    - **`trips`, done** (see "Trips").
-   - **`expenses` and base costs, done** (see "Expenses"). Next: `photos`.
+   - **`expenses` and base costs, done** (see "Expenses").
+   - **`photos`, done** (see "Photos"), including the profile photo. Phase 5 is complete.
 6. **Switch the web app.** Set `BACKEND_URL`, turn mocking off, handle `401` globally (checklist at the end of `docs/auth.md`).
 
 ### Left for last
@@ -120,7 +128,8 @@ Pieces that were postponed because they depend on infrastructure that comes late
 - [ ] **Google sign-in** (phase 4b): authorization code flow with state and PKCE, `email` column on `oauth_accounts` (fills `profile.googleEmail`, today always `null`), the `account-exists` rule, `GET /api/auth/google` and its callback.
 - [ ] **Mail delivery** (phase 4b): BullMQ job and a real transport (Resend, SES or similar) behind `MailerService`. Until then the recovery link is only logged outside production.
 - [ ] **Change e-mail**: `POST /api/profile/email-change` plus the confirmation endpoint and the web page that opens the link. Needs the mail delivery above. Until then the "Alterar" e-mail button of the profile fails against the real API.
-- [ ] **Profile photo**: `PUT` and `DELETE /api/profile/photo`. Needs the object storage and upload validation of the `photos` module.
+- [ ] **S3 compatible storage driver** (AWS S3 or Cloudflare R2): a second `StorageService`, `STORAGE_DRIVER=s3`, bucket, endpoint and credentials in env, `MEDIA_BASE_URL` pointing at the bucket or CDN. Needed before running more than one instance or on Fargate or Cloud Run.
+- [ ] **Oversized upload through the Next rewrite**: a file above the limit answers `413` straight from the API, but through the web app's rewrite the connection is reset and Next answers `500`. The web client already blocks files above 10 MB, so only other clients see it.
 - [ ] **Profile total in other currencies**: `profile/stats` only adds expenses in the main currency. Decide the exchange rate source (provider, daily snapshot, or rate stored on each expense) and sum everything.
 - [ ] **Swagger**, generated from the shared schemas once a few domains exist.
 
@@ -210,11 +219,11 @@ Tests (`test/auth.test.ts`) run against a real Postgres: `globalSetup` creates `
 | `GET /api/profile/stats`           | Trips, days traveled (both ends counted), distinct destinations (case and space insensitive) and the total. See below.                                                                                                                       |
 | `GET /api/profile/export`          | CSV of every expense, same columns as the mock. UTF-8 with BOM, `no-store`. Amounts use the currency's decimals (`980.00` EUR, `4500` JPY). Cells that start with `=`, `+`, `-`, `@` get a leading quote so a spreadsheet does not run them. |
 | `POST /api/profile/password-reset` | Same single use link as recovery, sent to the signed-in user (also how a Google-only account adds a password). 3 per hour per account.                                                                                                       |
-| `DELETE /api/profile`              | Deletes the user, cascading to sessions, trips, expenses, photos and own categories, and clears the cookie.                                                                                                                                  |
+| `PUT /api/profile/photo`           | `multipart/form-data`, one image under `photo` (JPG, PNG or WEBP, up to 5 MB). Replaces the previous one and deletes its file (a Google photo URL is not ours to delete). `DELETE /api/profile/photo` clears it.                             |
+| `DELETE /api/profile`              | Deletes the user, cascading to sessions, trips, expenses, photos and own categories, removes their stored files (profile and trip photos) and clears the cookie.                                                                             |
 
 Not built yet, on purpose:
 
-- `PUT` and `DELETE /api/profile/photo`: need object storage, they come with `photos`.
 - `POST /api/profile/email-change`: needs the confirmation endpoint and a real mail transport (phase 4b).
 
 `totalInCents` adds only the expenses made in the profile's main currency. There is no exchange rate source, and adding euros to reais would be wrong. When trips in other currencies matter here, rates become a decision (provider, daily snapshot or rate at the time of the expense).
@@ -245,7 +254,7 @@ Dev databases created before this change need `pnpm --filter @bordo/api db:migra
 | `GET /api/trips/:id` | `tripSchema`.                                                                                                                                                     |
 | `POST /api/trips`    | `createTripSchema` (end not before start, budget above zero, supported currency). `201`. Owner, id and cover come from the server, never from the body.           |
 
-- `coverPhotoUrl` comes from the trip's `cover_photo_id` photo. A stored value that is an absolute URL (the dev seed) is returned as is; a bare object storage key has no public base yet, so it is `null` until the `photos` module adds storage (`common/storage/photo-url.ts`).
+- `coverPhotoUrl` comes from the trip's `cover_photo_id` photo, turned into a URL by `common/storage/photo-url.ts` (see "Photos and storage").
 - `spentInCents` adds every expense of the trip. Expenses are expected to be in the trip's currency; the expenses module will enforce it.
 - Editing and deleting a trip are not in the contract yet (the web has no screens for them).
 
@@ -269,6 +278,24 @@ Rules the server enforces beyond the shared schema (`422`):
 
 `description` is trimmed by the shared schema (whitespace only is rejected). The date is not required to fall inside the trip: base costs are booked before it starts.
 
+## Photos
+
+`src/modules/photos`. Scoped like the other trip routes (another user's trip or photo is `404`, malformed ids `400`).
+
+| Route                                       | Notes                                                                                                                                                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/trips/:tripId/photos`             | `photoSchema[]`, the cover first, then in upload order.                                                                                                                                          |
+| `POST /api/trips/:tripId/photos`            | `multipart/form-data`, images under `files` (JPEG or PNG, up to 10 MB each, 10 per trip counting the existing ones). `201` with the created photos. The first photo of a trip becomes its cover. |
+| `PUT /api/trips/:tripId/cover`              | `{ photoId }`, a photo of that trip. Answers the photo with `isCover: true`.                                                                                                                     |
+| `DELETE /api/trips/:tripId/photos/:photoId` | `{ id }`. Deletes the row and the file. If it was the cover, the oldest remaining photo takes over, or the trip is left without one.                                                             |
+| `GET /api/media/*`                          | Serves the local driver's files. Public (an `<img>` cannot send a token), immutable cache, not rate limited. Unknown or malformed keys are `404`.                                                |
+
+- Every file is checked and processed before anything is stored, so one bad file rejects the batch (`422`, or `413` over the size limit) and nothing is left on disk. If saving the rows fails after the files were written, the files are removed.
+- The limit is enforced under a lock on the trip row, so two uploads at once cannot both go past 10 (tested).
+- Only upload routes accept `multipart/form-data` (`@AllowMultipart()`); every other mutation still has to be JSON.
+- The limits (`MAX_PHOTOS`, `MAX_PHOTO_BYTES`, accepted types, avatar limits) live in `@bordo/shared/photos`; the web client uses the same numbers.
+- A file that cannot be deleted from storage is logged, not fatal: the row is already gone.
+
 ## Environment
 
 Validated with Zod at boot (`src/config/env.ts`). The process exits with every problem listed. A `.env` file in `apps/api` is read outside production; real variables win.
@@ -281,6 +308,9 @@ Validated with Zod at boot (`src/config/env.ts`). The process exits with every p
 | `REDIS_URL`         | none                    | Rate limit storage and readiness check. Without it the limit is in memory (one process only) |
 | `DATABASE_URL`      | none                    | Postgres connection string. Optional in development and tests, mandatory in production       |
 | `DATABASE_POOL_MAX` | `10`                    | Connections per API instance                                                                 |
+| `STORAGE_DRIVER`    | `local`                 | Only `local` for now                                                                         |
+| `STORAGE_LOCAL_DIR` | `storage`               | Folder for uploaded files, relative to where the API starts. A volume in containers          |
+| `MEDIA_BASE_URL`    | `/api/media`            | Prefix of the photo URLs. The bucket or CDN address once an S3 compatible driver exists      |
 | `WEB_URL`           | `http://localhost:3000` | Public web address, used in e-mailed links                                                   |
 | `TRUST_PROXY`       | none                    | Addresses or CIDRs of the proxies in front of the API, comma separated. Never a number       |
 | `THROTTLE_TTL_MS`   | `60000`                 | Window of the global limit                                                                   |

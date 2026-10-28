@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import fastifyCookie from "@fastify/cookie";
+import multipart from "@fastify/multipart";
 import helmet from "@fastify/helmet";
 import { Logger } from "nestjs-pino";
 
@@ -11,6 +12,8 @@ export async function configureApp(app: NestFastifyApplication) {
   app.setGlobalPrefix(API_PREFIX);
   await app.register(helmet);
   await app.register(fastifyCookie);
+  // Per route limits are set when the files are read (`readUploads`); these are the outer bounds.
+  await app.register(multipart, { limits: { fields: 10, fileSize: 10 * 1024 * 1024, files: 11 } });
   app
     .getHttpAdapter()
     .getInstance()

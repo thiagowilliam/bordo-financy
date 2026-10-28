@@ -53,6 +53,8 @@ export async function createTestApp(
   for (const key of [
     "REDIS_URL",
     "DATABASE_URL",
+    "STORAGE_LOCAL_DIR",
+    "MEDIA_BASE_URL",
     "TRUST_PROXY",
     "THROTTLE_LIMIT",
     "THROTTLE_TTL_MS",

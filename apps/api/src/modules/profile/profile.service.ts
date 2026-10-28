@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import type { z } from "zod";
 import type { profileStatsSchema, updateProfileSchema } from "@bordo/shared/profile";
 
+import type { Upload } from "../../common/http/read-uploads.js";
+import { ImageService } from "../../common/storage/image.service.js";
+import { isOwnFile } from "../../common/storage/photo-url.js";
+import { newStorageKey } from "../../common/storage/storage-key.js";
+import { StorageService } from "../../common/storage/storage.service.js";
 import { AuthService } from "../auth/auth.service.js";
 import { toSessionUser } from "../auth/auth.repository.js";
 import type { SessionUser } from "../auth/session-user.js";
@@ -16,9 +21,13 @@ const KIND_LABEL = { BASE: "Custo de base", DAILY: "Dia a dia" } as const;
 
 @Injectable()
 export class ProfileService {
+  private readonly logger = new Logger(ProfileService.name);
+
   constructor(
     private readonly repository: ProfileRepository,
     private readonly auth: AuthService,
+    private readonly storage: StorageService,
+    private readonly images: ImageService,
   ) {}
 
   async update(user: SessionUser, input: UpdateProfile) {
@@ -44,6 +53,30 @@ export class ProfileService {
     };
   }
 
+  /** Checks and stores the new photo, then removes the old one if it was a file of ours. */
+  async setPhoto(user: SessionUser, upload: Upload) {
+    const image = await this.images.process(upload.data, ["jpeg", "png", "webp"]);
+    const key = newStorageKey("avatars", user.id, image.extension);
+    await this.storage.put(key, image.body, image.contentType);
+
+    try {
+      const { user: updated, previous } = await this.repository.setPhoto(user.id, key);
+      if (!updated) throw new NotFoundException();
+      if (isOwnFile(previous)) await this.removeFile(previous);
+      return toSessionUser(updated);
+    } catch (error) {
+      await this.removeFile(key);
+      throw error;
+    }
+  }
+
+  async removePhoto(user: SessionUser) {
+    const { user: updated, previous } = await this.repository.setPhoto(user.id, null);
+    if (!updated) throw new NotFoundException();
+    if (isOwnFile(previous)) await this.removeFile(previous);
+    return toSessionUser(updated);
+  }
+
   requestPasswordReset(user: SessionUser) {
     return this.auth.requestPasswordReset(user);
   }
@@ -64,8 +97,20 @@ export class ProfileService {
     return `﻿${[csvRow(EXPORT_HEADER), ...lines].join("\n")}\n`;
   }
 
+  /** Deletes the account, then the files that belonged to it (profile and trip photos). */
   async delete(user: SessionUser) {
+    const keys = (await this.repository.storedFileKeys(user.id)).filter(isOwnFile);
     await this.repository.deleteUser(user.id);
+    await Promise.all(keys.map((key) => this.removeFile(key)));
     return { id: user.id };
+  }
+
+  /** A file that cannot be removed is logged, not fatal: the data is already gone. */
+  private async removeFile(key: string) {
+    try {
+      await this.storage.delete(key);
+    } catch (error) {
+      this.logger.error(`Could not delete ${key}: ${String(error)}`);
+    }
   }
 }
