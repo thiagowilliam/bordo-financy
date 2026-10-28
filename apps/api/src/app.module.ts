@@ -7,21 +7,32 @@ import { ZodValidationPipe } from "nestjs-zod";
 import { LoggerModule } from "nestjs-pino";
 
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter.js";
+import { RateLimitModule } from "./common/rate-limit/rate-limit.module.js";
 import { JsonContentTypeGuard } from "./common/guards/json-content-type.guard.js";
 import { SafeThrottlerGuard } from "./common/guards/safe-throttler.guard.js";
 import { REDIS, type RedisClient } from "./common/redis/redis.module.js";
 import { RedisModule } from "./common/redis/redis.module.js";
 import { type Env, validateEnv } from "./config/env.js";
 import { DatabaseModule } from "./database/database.module.js";
+import { AuthGuard } from "./modules/auth/auth.guard.js";
+import { AuthModule } from "./modules/auth/auth.module.js";
 import { HealthModule } from "./health/health.module.js";
 
 const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv }),
+    // `.env` is loaded by config/load-env.ts (outside production). Reading it here too would leak a
+    // developer's local file into the tests.
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      ignoreEnvFile: true,
+      validate: validateEnv,
+    }),
     RedisModule,
     DatabaseModule,
+    RateLimitModule,
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => {
@@ -67,13 +78,16 @@ const HEALTH_URL = /^(\/api)?\/health(\/|\?|$)/;
       }),
     }),
     HealthModule,
+    AuthModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
-    // Guards run in this order: rate limit first, then content type.
+    // Guards run in this order: rate limit first, then content type, then session.
     { provide: APP_GUARD, useClass: SafeThrottlerGuard },
     { provide: APP_GUARD, useClass: JsonContentTypeGuard },
+    // Last: cheap checks first. Every route needs a session unless it is marked `@Public()`.
+    { provide: APP_GUARD, useClass: AuthGuard },
   ],
 })
 export class AppModule {}

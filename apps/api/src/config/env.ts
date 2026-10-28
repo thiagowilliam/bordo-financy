@@ -30,6 +30,8 @@ export const envSchema = z
     REDIS_URL: z.preprocess(emptyToUndefined, z.url().optional()),
     DATABASE_URL: z.preprocess(emptyToUndefined, z.url().optional()),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
+    /** Public address of the web app, used in e-mailed links. */
+    WEB_URL: z.url().default("http://localhost:3000"),
     TRUST_PROXY: z.preprocess(emptyToUndefined, z.string().optional()),
     THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
