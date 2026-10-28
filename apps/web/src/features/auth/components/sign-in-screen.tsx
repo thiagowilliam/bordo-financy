@@ -1,5 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { toast } from "sonner";
+
 import { AuthDivider } from "@/components/molecules/auth-divider";
 import { FormNotice } from "@/components/molecules/form-notice";
 import { GoogleButton } from "@/components/molecules/google-button";
@@ -15,15 +19,26 @@ export type SignInScreenProps = {
   next?: string;
   /** Set by the backend when the Google callback sends the user back here. */
   error?: GoogleError;
+  /** The user just signed out: confirm it with a toast. */
+  signedOut?: boolean;
 };
 
+const SIGNED_OUT_MESSAGE = "Você saiu da sua conta.";
 const GOOGLE_FAILED = "Não foi possível entrar com Google. Tente novamente.";
 const ACCOUNT_EXISTS =
   "Este e-mail já tem uma conta no Bordo. Entre com sua senha para vincular o Google à sua conta.";
 
 /** "Entrar": Google first, then e-mail and password. */
-export function SignInScreen({ next, error }: SignInScreenProps) {
+export function SignInScreen({ next, error, signedOut = false }: SignInScreenProps) {
   const google = useGoogleAuth({ next });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!signedOut) return;
+    toast.success(SIGNED_OUT_MESSAGE, { id: "signed-out" });
+    // Drop the param so a refresh does not repeat the toast.
+    router.replace("/entrar");
+  }, [signedOut, router]);
 
   const banner =
     error === "account-exists" ? (

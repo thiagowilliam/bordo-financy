@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MOCK_EXPIRED_TOKEN, MOCK_WRONG_PASSWORD } from "@/mocks/handlers/auth";
@@ -15,6 +16,7 @@ import { SignUpForm } from "./sign-up-form";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 beforeEach(() => replace.mockClear());
@@ -103,6 +105,20 @@ describe("SignInScreen", () => {
     expect(screen.getByRole("button", { name: "Continuar com Google" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Bem-vindo de volta" })).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("confirms a sign out with a toast and drops the param", async () => {
+    renderWithClient(<SignInScreen signedOut />);
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith("Você saiu da sua conta.", { id: "signed-out" }),
+    );
+    expect(replace).toHaveBeenCalledWith("/entrar");
+  });
+
+  it("shows no toast on a normal visit", () => {
+    vi.mocked(toast.success).mockClear();
+    renderWithClient(<SignInScreen />);
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("explains a failed Google sign in", () => {
