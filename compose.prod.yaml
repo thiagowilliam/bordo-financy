@@ -1,0 +1,125 @@
+# Production stack for a single VPS. Only Caddy is exposed (80 and 443).
+#   cp deploy/.env.production.example .env.production   (then fill it in)
+#   docker compose -f compose.prod.yaml --env-file .env.production up -d --build
+# Full guide: docs/deploy.md
+name: bordo
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env.production}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - api
+    networks: [edge, internal]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        BACKEND_URL: http://api:3001
+    restart: unless-stopped
+    environment:
+      # Read at runtime by the server side session lookup. The `/api/*` rewrite is baked at build.
+      BACKEND_URL: http://api:3001
+    depends_on:
+      - api
+    networks: [internal]
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgres://bordo:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/bordo
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: /app/storage
+      MEDIA_BASE_URL: /api/media
+      WEB_URL: https://${DOMAIN}
+      MAIL_SMTP_URL: ${MAIL_SMTP_URL:?set MAIL_SMTP_URL}
+      MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
+      # The API is only reachable through Caddy (no published port), so the private ranges Docker
+      # hands out to the `internal` network are the trusted proxy. Caddy replaces any
+      # X-Forwarded-For sent by a visitor with the real address.
+      TRUST_PROXY: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+    volumes:
+      - api-storage:/app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks: [internal]
+
+  # One-shot deploy step: applies the SQL migrations, then exits. Never on API boot.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: "no"
+    command: ["node", "dist/database/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://bordo:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/bordo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bordo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: bordo
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bordo -d bordo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Append only file: queued e-mails survive a restart.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+networks:
+  edge: {}
+  internal: {}
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  redis-data:
+  api-storage:

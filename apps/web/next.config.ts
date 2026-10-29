@@ -1,8 +1,14 @@
+import { fileURLToPath } from "node:url";
+
 import type { NextConfig } from "next";
 
 import { backendUrl } from "./src/lib/backend-url";
 
 const nextConfig: NextConfig = {
+  // Self-contained server for the Docker image. The tracing root is the repo root, so files of
+  // `packages/shared` (read through a `paths` alias) are part of the trace.
+  output: "standalone",
+  outputFileTracingRoot: fileURLToPath(new URL("../..", import.meta.url)),
   reactCompiler: true,
   typedRoutes: true,
   images: {
