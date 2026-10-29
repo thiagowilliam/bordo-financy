@@ -74,7 +74,7 @@ Both values go in `.env.production` (next step). Quote the sender, since it has 
 
 ```bash
 # as deploy
-git clone git@github.com:thiagowilliam/bordo-financy.git bordo && cd bordo
+git clone git@github.com:thiagowilliam/bordo-financy.git && cd bordo-financy
 cp deploy/.env.production.example .env.production
 nano .env.production        # DOMAIN, POSTGRES_PASSWORD, MAIL_SMTP_URL, MAIL_FROM
 chmod 600 .env.production
@@ -87,18 +87,18 @@ docker compose -f compose.prod.yaml --env-file .env.production ps
 ## 5. Updating
 
 ```bash
-cd ~/bordo && ./deploy/deploy.sh
+cd ~/bordo-financy && ./deploy/deploy.sh
 ```
 
 Pulls `main`, rebuilds what changed, runs new migrations, and recreates the containers that changed. Roll back with `git checkout <commit>` and `docker compose ... up -d --build`. A migration is not undone by that: restore the dump (below) if one has to go.
 
 ## 6. Backups
 
-`./deploy/backup.sh` writes a database dump and a tar of the photos into `~/bordo/backups` and keeps 14 days. Schedule it:
+`./deploy/backup.sh` writes a database dump and a tar of the photos into `~/bordo-financy/backups` and keeps 14 days. Schedule it:
 
 ```bash
 crontab -e
-0 3 * * * /home/deploy/bordo/deploy/backup.sh >> /home/deploy/bordo/backups/backup.log 2>&1
+0 3 * * * /home/deploy/bordo-financy/deploy/backup.sh >> /home/deploy/bordo-financy/backups/backup.log 2>&1
 ```
 
 Those backups live on the same disk. Copy `backups/` somewhere else too (`rsync` to another machine, `rclone` to a bucket), or the VPS provider's snapshot is your only protection. Restore:
