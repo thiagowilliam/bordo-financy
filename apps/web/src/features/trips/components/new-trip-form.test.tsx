@@ -110,7 +110,7 @@ describe("NewTripForm", () => {
     await userEvent.click(screen.getByRole("button", { name: /15 de/ }));
     await userEvent.click(screen.getByRole("button", { name: "Criar viagem" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/viagens"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/viagens/trip-new"));
     expect(toastSuccess).toHaveBeenCalledWith("Viagem criada");
     expect(body).toMatchObject({
       name: "Santorini & Mykonos",
@@ -185,8 +185,8 @@ describe("NewTripForm", () => {
     await userEvent.click(screen.getByRole("button", { name: /15 de/ }));
     await userEvent.click(screen.getByRole("button", { name: "Criar viagem" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/viagens"));
     const created = db.trips[0];
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/viagens/${created.id}`));
     expect(db.photos.filter((photo) => photo.tripId === created.id)).toHaveLength(1);
     expect(db.trips[0].coverPhotoUrl).not.toBeNull();
   });
