@@ -36,7 +36,7 @@ function TabItem({ href, label, icon, active }: TripTabBarItem & { active: boole
       <span aria-hidden="true" className={cn("flex [&_svg]:size-[22px]", active && "text-primary")}>
         {icon}
       </span>
-      <span className="text-[10px] leading-none font-semibold">{label}</span>
+      <span className="text-center text-[10px] leading-[1.1] font-semibold">{label}</span>
     </Link>
   );
 }

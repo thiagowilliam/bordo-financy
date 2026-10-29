@@ -33,3 +33,8 @@ export const WithMobileAction: Story = {
   },
   parameters: { viewport: { defaultViewport: "mobile1" } },
 };
+
+export const LargeTotalOnMobile: Story = {
+  args: { totalInCents: 1099015, budgetInCents: 2500000 },
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+};
