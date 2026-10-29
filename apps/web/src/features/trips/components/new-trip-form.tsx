@@ -76,7 +76,7 @@ export function NewTripForm() {
           }
         }
         toast.success("Viagem criada");
-        router.push("/viagens");
+        router.push(`/viagens/${trip.id}`);
       },
       onError: () => toast.error("Não foi possível criar a viagem. Tente de novo."),
     });
