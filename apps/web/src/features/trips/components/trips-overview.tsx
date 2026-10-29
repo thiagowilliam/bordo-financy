@@ -4,16 +4,19 @@ import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PageHeader } from "@/components/molecules/page-header";
 import { TripCard } from "@/components/molecules/trip-card";
 import { EmptyState } from "@/components/organisms/empty-state";
+import { TripActionsMenu } from "@/components/organisms/trip-actions-menu";
 import { TripSection } from "@/components/organisms/trip-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useTrips } from "../api/queries";
 import type { TripSummary } from "../types";
+import { useTripDeleteFlow } from "./trip-delete-flow";
 import { formatTripPeriod } from "../utils/trip-dates";
 import { getTripBadgeLabel, getTripPhase, type TripPhase } from "../utils/trip-status";
 
@@ -66,7 +69,9 @@ function CardsSkeleton() {
 
 /** "Minhas viagens": trips grouped by phase, with loading, error and empty states. */
 export function TripsOverview({ today }: TripsOverviewProps) {
+  const router = useRouter();
   const { data: trips, isPending, isError, refetch } = useTrips();
+  const { requestDelete, dialog } = useTripDeleteFlow();
   const todayIso = today ?? format(new Date(), "yyyy-MM-dd");
   const isEmpty = trips?.length === 0;
 
@@ -101,6 +106,8 @@ export function TripsOverview({ today }: TripsOverviewProps) {
 
       {isEmpty ? <TripsEmptyState /> : null}
 
+      {dialog}
+
       {trips && trips.length > 0 ? (
         <div className="flex flex-col gap-6 md:gap-8">
           {sections.map(({ phase, title }) => {
@@ -122,6 +129,14 @@ export function TripsOverview({ today }: TripsOverviewProps) {
                     spentInCents={trip.spentInCents}
                     budgetInCents={trip.budgetInCents}
                     currency={trip.currency}
+                    menu={
+                      <TripActionsMenu
+                        onEdit={() => router.push(`/viagens/${trip.id}/editar`)}
+                        onDelete={() =>
+                          requestDelete({ id: trip.id, name: trip.name, currency: trip.currency })
+                        }
+                      />
+                    }
                   />
                 ))}
               </TripSection>

@@ -16,6 +16,19 @@ export const tripSchema = z.object({
   coverPhotoUrl: z.string().nullable(),
 });
 
+/** The last time the budget was changed, shown under the progress bar of the overview. */
+export const budgetChangeSchema = z.object({
+  fromInCents: z.number().int().nonnegative(),
+  toInCents: z.number().int().nonnegative(),
+  /** ISO date-time. */
+  changedAt: z.iso.datetime({ offset: true }),
+});
+
+/** A single trip: the trip plus its last budget change, `null` when it was never changed. */
+export const tripDetailSchema = tripSchema.extend({
+  lastBudgetChange: budgetChangeSchema.nullable(),
+});
+
 /** What the trips list needs: the trip plus the total already spent, computed by the API. */
 export const tripSummarySchema = tripSchema.extend({
   spentInCents: z.number().int().nonnegative(),
@@ -24,7 +37,7 @@ export const tripSummarySchema = tripSchema.extend({
 const requiredIsoDate = (requiredMessage: string) =>
   z.string().min(1, requiredMessage).pipe(z.iso.date("Data inválida"));
 
-export const createTripSchema = z
+const tripFields = z
   .object({
     name: z.string().trim().min(1, "Informe o nome da viagem"),
     destination: z.string().trim().min(1, "Informe o destino"),
@@ -41,3 +54,10 @@ export const createTripSchema = z
     path: ["endDate"],
     message: "A data de volta não pode ser antes da ida",
   });
+
+export const createTripSchema = tripFields;
+
+/** Editing sends the whole trip again, like the expense update. The cover has its own route. */
+export const updateTripSchema = tripFields;
+
+export const deletedTripSchema = z.object({ id: z.string() });

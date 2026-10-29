@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { CircleAlert, CircleCheck, Info } from "lucide-react";
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ const formNoticeVariants = cva("flex items-start font-medium", {
       success: "bg-success-soft text-success-ink",
       error: "bg-destructive-soft text-destructive-ink",
       warning: "bg-warning-soft text-warning-ink",
+      info: "bg-primary-soft text-primary-strong",
     },
     compact: {
       false: "gap-3 rounded-2xl p-4 text-sm",
@@ -18,7 +19,12 @@ const formNoticeVariants = cva("flex items-start font-medium", {
   defaultVariants: { tone: "success", compact: false },
 });
 
-const icons = { success: CircleCheck, error: CircleAlert, warning: Info } as const;
+const icons = {
+  success: CircleCheck,
+  error: CircleAlert,
+  warning: TriangleAlert,
+  info: Info,
+} as const;
 
 export type FormNoticeProps = Omit<React.ComponentProps<"div">, "role"> &
   Omit<VariantProps<typeof formNoticeVariants>, "compact"> & { compact?: boolean };
@@ -34,7 +40,7 @@ export function FormNotice({
   const Icon = icons[tone ?? "success"];
   return (
     <div
-      role={tone === "success" ? "status" : "alert"}
+      role={tone === "success" || tone === "info" ? "status" : "alert"}
       className={cn(formNoticeVariants({ tone, compact }), className)}
       {...props}
     >

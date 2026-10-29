@@ -123,3 +123,18 @@ export const photos = pgTable(
   },
   (table) => [index("photos_trip_id_idx").on(table.tripId)],
 );
+
+/** One row per budget change, so the overview can say what the budget was and when it moved. */
+export const tripBudgetChanges = pgTable(
+  "trip_budget_changes",
+  {
+    id: id(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    fromCents: cents("from_cents").notNull(),
+    toCents: cents("to_cents").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [index("trip_budget_changes_trip_id_idx").on(table.tripId, table.createdAt)],
+);

@@ -38,4 +38,9 @@ describe("TripCover", () => {
     );
     expect(container.querySelector("img")).toHaveAttribute("alt", "");
   });
+
+  it("renders the action beside the phase pill", () => {
+    render(<TripCover {...base} action={<button type="button">Opções</button>} />);
+    expect(screen.getByRole("button", { name: "Opções" })).toBeInTheDocument();
+  });
 });

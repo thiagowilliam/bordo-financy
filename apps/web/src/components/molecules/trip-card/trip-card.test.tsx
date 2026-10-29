@@ -53,4 +53,11 @@ describe("TripCard", () => {
     rerender(<TripCard {...base} coverPhotoUrl="https://images.unsplash.com/photo-1" />);
     expect(container.querySelector("img")).not.toBeNull();
   });
+
+  it("renders the menu slot outside the link", () => {
+    render(<TripCard {...base} menu={<button type="button">Opções</button>} />);
+    const button = screen.getByRole("button", { name: "Opções" });
+    expect(screen.getByRole("link").contains(button)).toBe(false);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
 });
