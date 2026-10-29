@@ -48,7 +48,7 @@ export function PickerField({
         data-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         className={cn(
-          "flex w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-3.5 text-left outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-[invalid=true]:border-destructive data-[invalid=true]:ring-3 data-[invalid=true]:ring-destructive/20",
+          "flex min-h-12 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2.5 text-left outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-[invalid=true]:border-destructive data-[invalid=true]:ring-3 data-[invalid=true]:ring-destructive/20",
           className,
         )}
         {...props}

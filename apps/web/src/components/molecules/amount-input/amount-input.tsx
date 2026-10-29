@@ -77,8 +77,8 @@ export function AmountInput({
           value={display}
           placeholder={placeholder}
           onChange={(event) => onValueChange(digitsToMinorUnits(event.target.value))}
-          style={{ width: `${Math.max(display.length, placeholder.length)}ch` }}
-          className="min-w-0 border-0 bg-transparent p-0 text-center text-[68px] leading-none font-bold tracking-[-2px] text-foreground financial-value caret-cta outline-none placeholder:text-subtle-foreground md:text-[84px] md:tracking-[-2.5px]"
+          style={{ width: `${Math.max(display.length, placeholder.length) + 1}ch` }}
+          className="min-w-0 border-0 bg-transparent p-0 text-center text-[52px] leading-none font-bold tracking-[-1.5px] text-foreground financial-value caret-cta outline-none placeholder:text-subtle-foreground md:text-[64px] md:tracking-[-2px]"
         />
       </div>
       {hint ? (

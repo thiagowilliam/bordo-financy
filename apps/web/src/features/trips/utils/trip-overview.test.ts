@@ -41,7 +41,11 @@ describe("buildTripOverview", () => {
 
   it("averages daily spending over the days that already happened", () => {
     expect(overview.averageDailyInCents).toBe(Math.round(LISBON_DAILY_TOTAL_IN_CENTS / 11));
-    expect(build("2026-10-01").averageDailyInCents).toBe(0);
+    // Before the trip, planned expenses still average over the days that have them.
+    const before = build("2026-10-01");
+    expect(before.averageDailyInCents).toBe(
+      Math.round(LISBON_DAILY_TOTAL_IN_CENTS / before.daily.daysWithExpenses),
+    );
   });
 
   it("sorts categories by amount and sums their amounts to the daily total", () => {

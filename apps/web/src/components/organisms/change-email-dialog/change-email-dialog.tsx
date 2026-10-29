@@ -138,7 +138,7 @@ export function ChangeEmailDialog({ open, onOpenChange, ...formProps }: ChangeEm
       open={open}
       onOpenChange={onOpenChange}
       locked={formProps.isPending}
-      desktopClassName="max-w-[480px]"
+      desktopClassName="sm:max-w-[480px]"
     >
       <ChangeEmailForm {...formProps} />
     </ResponsiveModal>

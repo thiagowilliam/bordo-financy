@@ -14,6 +14,8 @@ export type PhotoDropzoneProps = Omit<
   /** Ref of the real file input, so other controls can open the picker. */
   inputRef?: React.Ref<HTMLInputElement>;
   disabled?: boolean;
+  /** Several files at once (default) or a single one, e.g. just the cover of a new trip. */
+  multiple?: boolean;
 };
 
 /** Drop area backed by a real `<input type="file">`, so click and keyboard work. */
@@ -21,6 +23,7 @@ export function PhotoDropzone({
   onFilesSelected,
   inputRef,
   disabled,
+  multiple = true,
   className,
   ...props
 }: PhotoDropzoneProps) {
@@ -49,9 +52,9 @@ export function PhotoDropzone({
       <input
         ref={inputRef}
         type="file"
-        multiple
+        multiple={multiple}
         accept="image/jpeg,image/png"
-        aria-label="Escolher fotos"
+        aria-label={multiple ? "Escolher fotos" : "Escolher foto de capa"}
         disabled={disabled}
         className="sr-only"
         onChange={(event) => {
@@ -64,8 +67,12 @@ export function PhotoDropzone({
         <Upload aria-hidden="true" className="size-6" />
       </span>
       <span className="text-[15px] font-bold text-primary-strong md:text-base">
-        <span className="md:hidden">Toque para escolher fotos</span>
-        <span className="max-md:hidden">Arraste e solte suas fotos aqui</span>
+        <span className="md:hidden">
+          {multiple ? "Toque para escolher fotos" : "Toque para escolher a capa"}
+        </span>
+        <span className="max-md:hidden">
+          {multiple ? "Arraste e solte suas fotos aqui" : "Arraste e solte a capa aqui"}
+        </span>
       </span>
       <span className="text-[13px] text-muted-foreground">
         <span className="md:hidden">ou arraste e solte aqui · JPG ou PNG até 10 MB</span>

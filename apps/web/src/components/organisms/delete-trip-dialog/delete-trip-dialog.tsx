@@ -50,7 +50,7 @@ export function DeleteTripDialog({
       onOpenChange={onOpenChange}
       locked={isPending}
       mobileVariant="center"
-      desktopClassName="max-w-[480px]"
+      desktopClassName="sm:max-w-[480px]"
       onOpenAutoFocus={(event) => {
         event.preventDefault();
         cancelRef.current?.focus();

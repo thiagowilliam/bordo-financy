@@ -52,6 +52,15 @@ describe("SignInForm", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/perfil"));
   });
 
+  it("keeps the button disabled while the redirect happens", async () => {
+    renderWithClient(<SignInForm next="/perfil" />);
+    await userEvent.type(screen.getByLabelText("E-mail"), "marina@email.com");
+    await userEvent.type(screen.getByLabelText("Senha"), "12345678");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/perfil"));
+    expect(screen.getByRole("button", { name: "Entrando..." })).toBeDisabled();
+  });
+
   it("ignores an external destination", async () => {
     renderWithClient(<SignInForm next="https://evil.com" />);
     await userEvent.type(screen.getByLabelText("E-mail"), "marina@email.com");

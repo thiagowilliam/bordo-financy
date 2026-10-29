@@ -32,7 +32,10 @@ export type TripOverview = {
   tripDays: number;
   base: { totalInCents: number; count: number };
   daily: { totalInCents: number; count: number; daysWithExpenses: number };
-  /** Daily spending divided by the days that already happened (0 before the trip starts). */
+  /**
+   * Daily spending divided by the days that already happened. Before the trip starts, expenses
+   * can already exist (planned days), so it falls back to the days that have expenses.
+   */
   averageDailyInCents: number;
   days: TripOverviewDay[];
   categories: TripOverviewCategory[];
@@ -87,6 +90,7 @@ export function buildTripOverview({
   });
 
   const elapsedDays = days.filter((day) => day.state !== "future").length;
+  const averageDays = elapsedDays > 0 ? elapsedDays : spentByDate.size;
 
   const totalsByCategory = new Map<string, number>();
   for (const expense of dailyExpenses) {
@@ -117,7 +121,7 @@ export function buildTripOverview({
       count: dailyExpenses.length,
       daysWithExpenses: spentByDate.size,
     },
-    averageDailyInCents: elapsedDays > 0 ? Math.round(dailyTotal / elapsedDays) : 0,
+    averageDailyInCents: averageDays > 0 ? Math.round(dailyTotal / averageDays) : 0,
     days,
     categories: categoryBreakdown,
     latest: dailyExpenses

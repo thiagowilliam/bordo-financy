@@ -251,7 +251,7 @@ export function PhotoUploadDialog({ open, onOpenChange, ...formProps }: PhotoUpl
       open={open}
       onOpenChange={onOpenChange}
       locked={formProps.isPending}
-      desktopClassName="max-w-[600px]"
+      desktopClassName="sm:max-w-[600px]"
     >
       <PhotoUploadForm {...formProps} />
     </ResponsiveModal>

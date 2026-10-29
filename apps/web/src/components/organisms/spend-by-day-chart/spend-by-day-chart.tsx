@@ -63,7 +63,7 @@ type DayTooltipProps = {
 
 function DayTooltip({ active, payload, currency }: DayTooltipProps) {
   const item = payload?.[0]?.payload;
-  if (!active || !item || item.state === "future") return null;
+  if (!active || !item || (item.state === "future" && item.amountInCents === 0)) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-md">
       <div className="text-muted-foreground">Dia {item.day}</div>
@@ -137,7 +137,14 @@ export function SpendByDayChart({
               isAnimationActive={false}
             >
               {days.map((item) => (
-                <Cell key={item.day} fill={barFill[item.state]} />
+                <Cell
+                  key={item.day}
+                  fill={
+                    item.state === "future" && item.amountInCents > 0
+                      ? "var(--chart-8)"
+                      : barFill[item.state]
+                  }
+                />
               ))}
             </Bar>
           </BarChart>
@@ -153,7 +160,7 @@ export function SpendByDayChart({
         </thead>
         <tbody>
           {days
-            .filter((item) => item.state !== "future")
+            .filter((item) => item.state !== "future" || item.amountInCents > 0)
             .map((item) => (
               <tr key={item.day}>
                 <th scope="row">Dia {item.day}</th>

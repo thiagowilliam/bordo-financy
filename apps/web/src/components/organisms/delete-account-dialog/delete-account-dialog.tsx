@@ -160,7 +160,7 @@ export function DeleteAccountDialog({
       onOpenChange={onOpenChange}
       locked={formProps.isPending}
       mobileVariant="center"
-      desktopClassName="max-w-[480px]"
+      desktopClassName="sm:max-w-[480px]"
     >
       <DeleteAccountForm {...formProps} />
     </ResponsiveModal>
