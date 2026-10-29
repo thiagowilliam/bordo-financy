@@ -1,0 +1,15 @@
+# Caddy gets the certificate for the domain by itself (Let's Encrypt) and renews it.
+# `{$DOMAIN}` comes from the compose environment, e.g. bordo.thiagowilliam.com.br.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# The API goes straight to the API container, so it sees the real client address
+	# (X-Forwarded-For set by Caddy) and the rate limits work per visitor.
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

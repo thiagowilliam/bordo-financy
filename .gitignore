@@ -46,3 +46,5 @@ storybook-static
 
 # build output
 dist/
+.env.production
+backups/

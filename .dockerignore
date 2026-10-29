@@ -9,8 +9,9 @@
 .husky
 .claude
 docs
+deploy
+backups
+apps/api/storage
 **/*.log
 **/*.tsbuildinfo
-# The web app is not part of the API image; only its manifest is needed for the lockfile.
-apps/web/*
-!apps/web/package.json
+**/coverage

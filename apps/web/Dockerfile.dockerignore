@@ -1,0 +1,20 @@
+**/node_modules
+**/dist
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.husky
+.claude
+docs
+deploy
+backups
+apps/api/storage
+**/*.log
+**/*.tsbuildinfo
+**/coverage
+# The API is not part of the web image; only its manifest is needed for the lockfile.
+apps/api/*
+!apps/api/package.json
