@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Backs up the database and the uploaded photos into ./backups (kept for 14 days).
 #   ./deploy/backup.sh
-# Daily at 03:00 (crontab -e):  0 3 * * * /home/deploy/bordo/deploy/backup.sh >> /home/deploy/bordo/backups/backup.log 2>&1
+# Daily at 03:00 (crontab -e):  0 3 * * * /home/deploy/bordo-financy/deploy/backup.sh >> /home/deploy/bordo-financy/backups/backup.log 2>&1
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
