@@ -78,3 +78,13 @@ export const Mobile: Story = {
   ],
   globals: { viewport: { value: "mobile1", isRotated: false } },
 };
+
+export const WithMenu: Story = {
+  args: {
+    menu: (
+      <button type="button" aria-label="Opções da viagem" className="rounded-lg bg-white/90 p-2">
+        ⋯
+      </button>
+    ),
+  },
+};

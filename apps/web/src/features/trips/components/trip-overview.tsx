@@ -1,11 +1,14 @@
 "use client";
 
 import { format } from "date-fns";
-import { CalendarDays, Wallet } from "lucide-react";
+import { CalendarDays, Pencil, Wallet } from "lucide-react";
 import type { Route } from "next";
-import { useMemo } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { StatCard } from "@/components/molecules/stat-card";
+import { BudgetAdjustPopover } from "@/components/organisms/budget-adjust-popover";
 import { BudgetTotalCard } from "@/components/organisms/budget-total-card";
 import { CategoryBreakdown } from "@/components/organisms/category-breakdown";
 import { LatestExpenses } from "@/components/organisms/latest-expenses";
@@ -18,10 +21,13 @@ import { useCategories } from "@/features/categories";
 import { useExpenses } from "@/features/expenses";
 import { ApiError } from "@/lib/api-client";
 
+import type { UpdateTripInput } from "../types";
+import { useUpdateTrip } from "../api/mutations";
 import { useTrip } from "../api/queries";
 import { TripTopBar } from "./trip-top-bar";
 import { formatTripPeriod } from "../utils/trip-dates";
 import { getTripBadgeLabel, getTripPhase, type TripPhase } from "../utils/trip-status";
+import { formatBudgetChangeNote } from "../utils/trip-edit";
 import { buildTripOverview, formatExpenseDay } from "../utils/trip-overview";
 
 export type TripOverviewProps = {
@@ -58,6 +64,8 @@ export function TripOverview({ tripId, today }: TripOverviewProps) {
   const baseCosts = useBaseCosts(tripId);
   const dailyExpenses = useExpenses(tripId);
   const categories = useCategories();
+  const updateTrip = useUpdateTrip(tripId);
+  const [adjustingBudget, setAdjustingBudget] = useState(false);
 
   const overview = useMemo(() => {
     if (!trip.data || !baseCosts.data || !dailyExpenses.data || !categories.data) return null;
@@ -116,6 +124,18 @@ export function TripOverview({ tripId, today }: TripOverviewProps) {
         period={formatTripPeriod(trip.data)}
         phaseLabel={`${phasePrefix[phase]} · ${getTripBadgeLabel(trip.data, todayIso)}`}
         coverPhotoUrl={trip.data.coverPhotoUrl}
+        action={
+          <Button
+            asChild
+            variant="secondary"
+            className="h-auto gap-2 rounded-lg border-0 bg-white/90 px-3.5 py-2 text-[13px] font-bold text-foreground backdrop-blur-sm hover:bg-white [&_svg:not([class*='size-'])]:size-4"
+          >
+            <Link href={`/viagens/${tripId}/editar` as Route}>
+              <Pencil aria-hidden="true" />
+              Editar viagem
+            </Link>
+          </Button>
+        }
       />
 
       <div className="flex flex-col gap-3 md:flex-row md:gap-6">
@@ -124,6 +144,40 @@ export function TripOverview({ tripId, today }: TripOverviewProps) {
           budgetInCents={budgetInCents}
           currency={currency}
           tripDays={overview.tripDays}
+          budgetAction={
+            <BudgetAdjustPopover
+              budgetInCents={budgetInCents}
+              spentInCents={overview.spentInCents}
+              currency={currency}
+              isPending={updateTrip.isPending}
+              open={adjustingBudget}
+              onOpenChange={setAdjustingBudget}
+              onSave={(next) =>
+                updateTrip.mutate(
+                  {
+                    name: trip.data.name,
+                    destination: trip.data.destination,
+                    startDate: trip.data.startDate,
+                    endDate: trip.data.endDate,
+                    currency: trip.data.currency as UpdateTripInput["currency"],
+                    budgetInCents: next,
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success("Orçamento atualizado");
+                      setAdjustingBudget(false);
+                    },
+                    onError: () => toast.error("Não foi possível ajustar o orçamento."),
+                  },
+                )
+              }
+            />
+          }
+          budgetNote={
+            trip.data.lastBudgetChange
+              ? formatBudgetChangeNote(trip.data.lastBudgetChange, currency)
+              : undefined
+          }
           className="md:flex-1"
         />
         <div className="grid grid-cols-2 gap-3 md:contents">

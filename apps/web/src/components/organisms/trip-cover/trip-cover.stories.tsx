@@ -25,3 +25,13 @@ export const Default: Story = {};
 export const WithoutPhoto: Story = { args: { coverPhotoUrl: null } };
 
 export const Mobile: Story = { globals: { viewport: { value: "mobile1" } } };
+
+export const WithAction: Story = {
+  args: {
+    action: (
+      <button type="button" aria-label="Opções da viagem" className="rounded-lg bg-white/90 p-2">
+        ⋯
+      </button>
+    ),
+  },
+};

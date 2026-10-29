@@ -1,5 +1,6 @@
 import { Calendar, MapPin } from "lucide-react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,8 @@ export type TripCoverProps = Omit<React.ComponentProps<"div">, "children"> & {
   /** Phase pill text, e.g. "Em andamento · Dia 11 de 15". */
   phaseLabel: string;
   coverPhotoUrl: string | null;
+  /** Control on the pill row, right side, e.g. a `TripActionsMenu`. */
+  action?: ReactNode;
 };
 
 /** Hero banner of the trip overview: cover photo, gradient, phase pill, name and meta. */
@@ -20,6 +23,7 @@ export function TripCover({
   period,
   phaseLabel,
   coverPhotoUrl,
+  action,
   className,
   ...props
 }: TripCoverProps) {
@@ -45,10 +49,13 @@ export function TripCover({
         aria-hidden="true"
         className="absolute inset-0 bg-linear-to-b from-transparent from-20% to-foreground/85 to-100%"
       />
-      <div className="relative flex flex-col items-start gap-2 p-5 md:gap-2.5 md:p-8">
-        <span className="rounded-full bg-white/92 px-3 py-[5px] text-xs leading-4 font-bold text-foreground md:px-3.5 md:py-1.5 md:text-[13px]">
-          {phaseLabel}
-        </span>
+      <div className="relative flex w-full flex-col items-start gap-2 p-5 md:gap-2.5 md:p-8">
+        <div className="flex w-full items-center justify-between gap-3">
+          <span className="rounded-full bg-white/92 px-3 py-[5px] text-xs leading-4 font-bold text-foreground md:px-3.5 md:py-1.5 md:text-[13px]">
+            {phaseLabel}
+          </span>
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
         <h1 className="text-3xl font-bold tracking-[-0.5px] text-white md:text-[46px] md:leading-[1.2] md:tracking-[-1px]">
           {name}
         </h1>

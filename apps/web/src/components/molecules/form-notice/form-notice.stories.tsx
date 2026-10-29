@@ -25,3 +25,9 @@ export const CompactWarning: Story = {
 export const CompactSuccess: Story = {
   args: { tone: "success", compact: true, children: "Alterações salvas." },
 };
+export const InfoTone: Story = {
+  args: { tone: "info", children: "Você pode ajustar o orçamento a qualquer momento." },
+};
+export const CompactInfo: Story = {
+  args: { tone: "info", compact: true, children: "Você pode ajustar o orçamento depois." },
+};

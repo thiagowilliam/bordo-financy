@@ -49,4 +49,18 @@ describe("BudgetTotalCard", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/restantes/)).not.toBeInTheDocument();
   });
+
+  it("renders the budget action and note only when given", () => {
+    const { rerender } = render(<BudgetTotalCard {...base} />);
+    expect(screen.queryByRole("button", { name: "Ajustar orçamento" })).not.toBeInTheDocument();
+    rerender(
+      <BudgetTotalCard
+        {...base}
+        budgetAction={<button type="button" aria-label="Ajustar orçamento" />}
+        budgetNote="Orçamento ajustado em 20 out."
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Ajustar orçamento" })).toBeInTheDocument();
+    expect(screen.getByText("Orçamento ajustado em 20 out.")).toBeInTheDocument();
+  });
 });

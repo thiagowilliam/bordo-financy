@@ -38,4 +38,11 @@ describe("FormNotice", () => {
     );
     expect(screen.getByRole("status")).toHaveTextContent("Salvo");
   });
+
+  it("renders the info tone as a status", () => {
+    render(<FormNotice tone="info">Dica</FormNotice>);
+    const notice = screen.getByRole("status");
+    expect(notice).toHaveTextContent("Dica");
+    expect(notice).toHaveClass("bg-primary-soft", "text-primary-strong");
+  });
 });

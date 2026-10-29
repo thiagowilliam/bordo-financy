@@ -1,3 +1,5 @@
+import type { BudgetChange } from "@/features/trips";
+
 import { categoriesFixture } from "../fixtures/categories";
 import { expensesFixture } from "../fixtures/expenses";
 import { photosFixture } from "../fixtures/photos";
@@ -10,6 +12,8 @@ export const db = {
   categories: structuredClone(categoriesFixture),
   expenses: structuredClone(expensesFixture),
   photos: structuredClone(photosFixture),
+  /** Last budget change per trip id, like the API's `lastBudgetChange`. */
+  budgetChanges: {} as Record<string, BudgetChange>,
   profile: structuredClone(profileFixture),
   profileStats: structuredClone(profileStatsFixture),
 };

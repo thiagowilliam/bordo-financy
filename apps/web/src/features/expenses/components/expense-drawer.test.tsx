@@ -36,6 +36,20 @@ describe("ExpenseDrawer", () => {
     expect(await screen.findByRole("dialog", { name: "Lançar gasto" })).toBeInTheDocument();
   });
 
+  it("starts on the last day of a finished trip instead of today", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-10T12:00:00") });
+    try {
+      renderDrawer();
+      useExpenseDrawerStore.getState().open();
+      expect(await screen.findByRole("button", { name: /^Data/ })).toHaveTextContent(
+        "26 out · Dia 15",
+      );
+      expect(screen.queryByText(/Hoje/)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("opens in the base cost mode", async () => {
     renderDrawer();
     useExpenseDrawerStore.getState().open("BASE");
