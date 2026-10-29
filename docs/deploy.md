@@ -51,21 +51,20 @@ curl -fsSL https://get.docker.com | sh && usermod -aG docker deploy
 
 Open a **second terminal** and check `ssh deploy@SERVER_IP` works before closing the root one. From then on, use `deploy`. (Optional hardening: set `PermitRootLogin no` and `PasswordAuthentication no` in `/etc/ssh/sshd_config`, then `systemctl restart ssh`.)
 
-## 2. DNS (the domain is on Vercel)
+## 2. DNS (the domain is on Registro.br)
 
-`thiagowilliam.com.br` uses Vercel's name servers, so the record is created **in the Vercel panel**, not at Registro.br. Leave the name servers at Registro.br as they are.
+`thiagowilliam.com.br` uses the Registro.br name servers, so the record is created **in the Registro.br zone editor**. The site on the main domain (if any) is not affected: only the `bordo` name is new.
 
-1. Check where the DNS lives: vercel.com, **Domains**, `thiagowilliam.com.br`. It should offer an **Add Record** form and show the Vercel name servers (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`). At registro.br the domain must point to those same name servers.
-2. **Add Record**: Name `bordo`, Type `A`, Value the server IPv4. (Add an `AAAA` record too only if the provider gave you an IPv6.)
-3. This does not affect any site already on `thiagowilliam.com.br`: only the `bordo` name is new.
-4. Check from your Mac: `dig +short bordo.thiagowilliam.com.br` prints the server IP. It usually takes minutes. Do this **before** the first start, or Caddy cannot get the HTTPS certificate.
+1. Check where the DNS lives: registro.br, your domain, **DNS**. It should show the Registro.br name servers and a zone editor (**Editar Zona**). If the domain points to other name servers (Vercel, Cloudflare...), create the record in that provider's panel instead.
+2. Add a record: Name `bordo`, Type `A`, Value the server IPv4. (Add an `AAAA` record too only if the provider gave you an IPv6.)
+3. Check from your Mac: `dig +short bordo.thiagowilliam.com.br` prints the server IP. It usually takes minutes. Do this **before** the first start, or Caddy cannot get the HTTPS certificate.
 
 ## 3. E-mail (required)
 
 The API refuses to start in production without `MAIL_SMTP_URL` and `MAIL_FROM`. Account e-mails (password recovery, change of e-mail) go through any SMTP provider (Resend, Brevo, SES). With Resend, for example:
 
 1. Create an account and add the domain `thiagowilliam.com.br` (or a sending subdomain it suggests).
-2. It lists DNS records (SPF, DKIM, sometimes MX). Add each one in the same **Vercel Domains** panel, with the exact name, type and value shown. Wait until Resend marks the domain as verified.
+2. It lists DNS records (SPF, DKIM, sometimes MX). Add each one in the same Registro.br zone editor, with the type and value shown. If the form appends the domain by itself, enter the name without the `thiagowilliam.com.br` suffix. Wait until Resend marks the domain as verified.
 3. Create an API key and build the SMTP URL: `smtps://resend:API_KEY@smtp.resend.com:465`.
 4. Use a sender on the verified domain: `Bordo <nao-responda@thiagowilliam.com.br>`.
 
