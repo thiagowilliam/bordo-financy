@@ -73,7 +73,9 @@ describe("TripsOverview", () => {
     expect(
       await screen.findByRole("heading", { name: "Sua primeira viagem começa aqui" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Olá, Marina. Suas viagens vão aparecer aqui.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Olá, Marina. Suas viagens vão aparecer aqui."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Nova viagem" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Criar primeira viagem/ })).toBeInTheDocument();
   });

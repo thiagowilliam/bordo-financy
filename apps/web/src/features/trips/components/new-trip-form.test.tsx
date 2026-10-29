@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { db } from "@/mocks/handlers/db";
 import { server } from "@/mocks/server";
 
 import { NewTripForm } from "./new-trip-form";
@@ -168,5 +169,25 @@ describe("NewTripForm", () => {
     expect(
       (screen.getByLabelText("Orçamento total") as HTMLInputElement).value.replace(/\s/g, " "),
     ).toBe("¥ 540.000");
+  });
+
+  it("takes a single cover photo and uploads it to the new trip", async () => {
+    renderForm();
+    const input = screen.getByLabelText("Escolher foto de capa");
+    expect(input).not.toHaveAttribute("multiple");
+    const file = new File(["x"], "capa.jpg", { type: "image/jpeg" });
+    await userEvent.upload(input, file);
+    expect(await screen.findByAltText("capa.jpg")).toBeInTheDocument();
+    expect(screen.getByLabelText("Escolher foto de capa")).toBeDisabled();
+
+    await fillValidForm();
+    await userEvent.click(screen.getByRole("button", { name: "Data de volta" }));
+    await userEvent.click(screen.getByRole("button", { name: /15 de/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Criar viagem" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/viagens"));
+    const created = db.trips[0];
+    expect(db.photos.filter((photo) => photo.tripId === created.id)).toHaveLength(1);
+    expect(db.trips[0].coverPhotoUrl).not.toBeNull();
   });
 });

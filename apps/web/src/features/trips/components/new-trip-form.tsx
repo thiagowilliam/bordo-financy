@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Check, MapPin, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -15,7 +16,12 @@ import { MoneyInput } from "@/components/molecules/money-input";
 import { PhotoPicker } from "@/components/organisms/photo-picker";
 import { Button } from "@/components/ui/button";
 
+import { useQueryClient } from "@tanstack/react-query";
+
+import { uploadPhotos } from "@/features/photos/api/client";
+
 import { useCreateTrip } from "../api/mutations";
+import { tripKeys } from "../api/keys";
 import { createTripSchema } from "@bordo/shared/trips";
 import type { CreateTripInput } from "../types";
 
@@ -28,10 +34,13 @@ const defaultValues: CreateTripInput = {
   currency: "BRL",
 };
 
-/** Form of the "Nova viagem" screen. Photos are only previewed, they are not sent. */
+/** Form of the "Nova viagem" screen. Only the cover is picked here; more photos come later. */
 export function NewTripForm() {
   const router = useRouter();
   const createTrip = useCreateTrip();
+  const queryClient = useQueryClient();
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const {
     register,
     control,
@@ -48,12 +57,24 @@ export function NewTripForm() {
 
   const currency = useWatch({ control, name: "currency" });
   const startDate = useWatch({ control, name: "startDate" });
-  const isBusy = createTrip.isPending || createTrip.isSuccess;
+  const isBusy = createTrip.isPending || isUploading || createTrip.isSuccess;
 
   function onSubmit(input: CreateTripInput) {
     if (isBusy) return;
     createTrip.mutate(input, {
-      onSuccess: () => {
+      onSuccess: async (trip) => {
+        if (coverFile) {
+          setIsUploading(true);
+          try {
+            // The first photo of a trip without a cover becomes the cover.
+            await uploadPhotos(trip.id, [coverFile]);
+            await queryClient.invalidateQueries({ queryKey: tripKeys.all });
+          } catch {
+            toast.error(
+              "A viagem foi criada, mas não foi possível enviar a capa. Tente na aba Fotos.",
+            );
+          }
+        }
         toast.success("Viagem criada");
         router.push("/viagens");
       },
@@ -168,9 +189,14 @@ export function NewTripForm() {
 
       <div className="flex flex-col gap-2">
         <span id="trip-photos-label" className="text-sm font-semibold text-foreground">
-          Fotos do destino
+          Foto de capa (opcional)
         </span>
-        <PhotoPicker aria-labelledby="trip-photos-label" role="group" />
+        <PhotoPicker
+          aria-labelledby="trip-photos-label"
+          role="group"
+          maxPhotos={1}
+          onChange={({ files }) => setCoverFile(files[0] ?? null)}
+        />
       </div>
 
       <div className="flex gap-3 pt-2 md:justify-end">
@@ -191,7 +217,7 @@ export function NewTripForm() {
           className="h-auto flex-1 gap-2 rounded-lg px-7 py-3.75 text-base font-bold md:flex-none [&_svg:not([class*='size-'])]:size-4.5"
         >
           <Check aria-hidden="true" />
-          {createTrip.isPending ? "Criando..." : "Criar viagem"}
+          {createTrip.isPending || isUploading ? "Criando..." : "Criar viagem"}
         </Button>
       </div>
     </form>

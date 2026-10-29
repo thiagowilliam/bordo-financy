@@ -49,7 +49,7 @@ export function LatestExpenses({
           Nenhum lançamento ainda
         </p>
       ) : (
-        <ul className="rounded-xl border border-border bg-card px-4 py-2 md:rounded-none md:border-0 md:bg-transparent md:p-0">
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card px-4 py-2 md:rounded-none md:border-0 md:bg-transparent md:p-0">
           {expenses.map(({ id, href, ...row }) => (
             <li key={id}>
               <Link

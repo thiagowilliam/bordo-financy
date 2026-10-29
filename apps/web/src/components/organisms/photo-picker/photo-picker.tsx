@@ -13,16 +13,24 @@ type Photo = { id: string; name: string; url: string };
 export type PhotoPickerProps = Omit<React.ComponentProps<"div">, "children" | "onChange"> & {
   /** Called whenever the selection changes, with the files in order and the cover index. */
   onChange?: (selection: { files: File[]; coverIndex: number }) => void;
+  /** How many photos can be picked. Defaults to the trip limit; 1 hides the cover choice hint. */
+  maxPhotos?: number;
 };
 
 const INVALID_MESSAGE = "Algumas fotos foram ignoradas: use JPG ou PNG de até 10 MB.";
-const OVERFLOW_MESSAGE = `Você pode adicionar até ${MAX_PHOTOS} fotos.`;
+const overflowMessage = (max: number) =>
+  max === 1 ? "Escolha apenas uma foto de capa." : `Você pode adicionar até ${max} fotos.`;
 
 /**
  * Photo selection with drag and drop, previews and cover choice. Photos only live in the
  * browser: nothing is uploaded.
  */
-export function PhotoPicker({ onChange, className, ...props }: PhotoPickerProps) {
+export function PhotoPicker({
+  onChange,
+  maxPhotos = MAX_PHOTOS,
+  className,
+  ...props
+}: PhotoPickerProps) {
   const [photos, setPhotos] = useState<(Photo & { file: File })[]>([]);
   const [coverId, setCoverId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +60,8 @@ export function PhotoPicker({ onChange, className, ...props }: PhotoPickerProps)
 
   function handleFiles(files: File[]) {
     if (files.length === 0) return;
-    const { accepted, hasInvalid, hasOverflow } = filterPhotoFiles(files, photos.length);
-    setError(hasInvalid ? INVALID_MESSAGE : hasOverflow ? OVERFLOW_MESSAGE : null);
+    const { accepted, hasInvalid, hasOverflow } = filterPhotoFiles(files, photos.length, maxPhotos);
+    setError(hasInvalid ? INVALID_MESSAGE : hasOverflow ? overflowMessage(maxPhotos) : null);
     if (accepted.length === 0) return;
     const added = accepted.map((file) => ({
       id: crypto.randomUUID(),
@@ -88,11 +96,16 @@ export function PhotoPicker({ onChange, className, ...props }: PhotoPickerProps)
     notify(photos, id);
   }
 
-  const isFull = photos.length >= MAX_PHOTOS;
+  const isFull = photos.length >= maxPhotos;
 
   return (
     <div className={cn("flex flex-col gap-3.5", className)} {...props}>
-      <PhotoDropzone inputRef={inputRef} onFilesSelected={handleFiles} disabled={isFull} />
+      <PhotoDropzone
+        inputRef={inputRef}
+        onFilesSelected={handleFiles}
+        disabled={isFull}
+        multiple={maxPhotos > 1}
+      />
       {error ? (
         <p role="alert" className="text-[13px] text-destructive">
           {error}
@@ -125,7 +138,10 @@ export function PhotoPicker({ onChange, className, ...props }: PhotoPickerProps)
               </li>
             )}
           </ul>
-          <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground md:hidden">
+          <p
+            hidden={maxPhotos === 1}
+            className="flex items-center gap-1.5 text-[13px] text-muted-foreground md:hidden"
+          >
             <Star aria-hidden="true" className="size-3.5 shrink-0" />A foto com a estrela marcada
             será a capa da viagem
           </p>

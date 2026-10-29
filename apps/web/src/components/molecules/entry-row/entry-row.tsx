@@ -81,10 +81,7 @@ export function EntryRow({
 
   if (onSelect) {
     return (
-      <div
-        className={cn("group flex items-center gap-1.5 md:hover:bg-background", className)}
-        {...props}
-      >
+      <div className={cn("group flex items-center gap-1.5", className)} {...props}>
         <button
           type="button"
           onClick={onSelect}
@@ -100,14 +97,7 @@ export function EntryRow({
   }
 
   return (
-    <div
-      className={cn(
-        "group flex items-center gap-3.5 py-3.5",
-        actions && "md:hover:bg-background",
-        className,
-      )}
-      {...props}
-    >
+    <div className={cn("group flex items-center gap-3.5 py-3.5", className)} {...props}>
       {content}
       {actionsSlot}
       {amount}

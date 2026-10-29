@@ -11,7 +11,7 @@ const meta = {
   args: {
     open: true,
     onOpenChange: () => {},
-    desktopClassName: "max-w-[480px]",
+    desktopClassName: "sm:max-w-[480px]",
     children: (
       <>
         <DialogTitle className="text-xl font-bold">Título do modal</DialogTitle>

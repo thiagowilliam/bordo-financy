@@ -14,6 +14,8 @@ import { TripSection } from "@/components/organisms/trip-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { useProfile } from "@/features/profile";
+
 import { useTrips } from "../api/queries";
 import type { TripSummary } from "../types";
 import { useTripDeleteFlow } from "./trip-delete-flow";
@@ -70,6 +72,9 @@ function CardsSkeleton() {
 /** "Minhas viagens": trips grouped by phase, with loading, error and empty states. */
 export function TripsOverview({ today }: TripsOverviewProps) {
   const router = useRouter();
+  const { data: profile } = useProfile();
+  const firstName = profile?.name.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Olá, ${firstName}` : "Olá";
   const { data: trips, isPending, isError, refetch } = useTrips();
   const { requestDelete, dialog } = useTripDeleteFlow();
   const todayIso = today ?? format(new Date(), "yyyy-MM-dd");
@@ -79,12 +84,12 @@ export function TripsOverview({ today }: TripsOverviewProps) {
     <div className="flex flex-col gap-6 md:gap-8">
       <PageHeader
         title="Minhas viagens"
-        eyebrow="Olá, Marina"
+        eyebrow={greeting}
         eyebrowClassName="md:hidden"
         subtitle={
           isEmpty
-            ? "Olá, Marina. Suas viagens vão aparecer aqui."
-            : "Olá, Marina. Do planejamento à volta, tudo num só lugar."
+            ? `${greeting}. Suas viagens vão aparecer aqui.`
+            : `${greeting}. Do planejamento à volta, tudo num só lugar.`
         }
         subtitleClassName="hidden md:block"
         action={isEmpty ? undefined : <NewTripAction />}

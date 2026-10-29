@@ -295,7 +295,7 @@ export function CategoryFormDialog({ open, onOpenChange, ...formProps }: Categor
       open={open}
       onOpenChange={onOpenChange}
       locked={formProps.isPending}
-      desktopClassName="max-w-[540px]"
+      desktopClassName="sm:max-w-[540px]"
     >
       <CategoryForm {...formProps} />
     </ResponsiveModal>

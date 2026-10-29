@@ -19,13 +19,17 @@ export type PhotoFilterResult = {
 };
 
 /** Splits picked files into the ones the picker can take and what was ignored. */
-export function filterPhotoFiles(files: File[], currentCount: number): PhotoFilterResult {
+export function filterPhotoFiles(
+  files: File[],
+  currentCount: number,
+  maxPhotos: number = MAX_PHOTOS,
+): PhotoFilterResult {
   const valid = files.filter(
     (file) =>
       (ACCEPTED_PHOTO_TYPES as readonly string[]).includes(file.type) &&
       file.size <= MAX_PHOTO_BYTES,
   );
-  const room = Math.max(0, MAX_PHOTOS - currentCount);
+  const room = Math.max(0, maxPhotos - currentCount);
   return {
     accepted: valid.slice(0, room),
     hasInvalid: valid.length < files.length,

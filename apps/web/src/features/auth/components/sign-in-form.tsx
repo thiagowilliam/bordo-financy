@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -42,7 +42,11 @@ export function SignInForm({ next, disabled }: SignInFormProps) {
     formState: { errors },
   } = useForm<SignInInput>({ resolver: zodResolver(signInSchema) });
 
+  // Stays busy after success too: the redirect is still on its way and a second click would sign in twice.
+  const isBusy = signIn.isPending || signIn.isSuccess;
+
   const onSubmit = handleSubmit((values) => {
+    if (isBusy) return;
     setFormError(undefined);
     signIn.mutate(values, {
       onSuccess: () => router.replace(safeRedirectPath(next) as "/"),
@@ -90,10 +94,12 @@ export function SignInForm({ next, disabled }: SignInFormProps) {
         type="submit"
         variant="cta"
         size="lg"
-        disabled={disabled || signIn.isPending}
+        disabled={disabled || isBusy}
+        aria-busy={isBusy}
         className={authSubmitClassName}
       >
-        {signIn.isPending ? "Entrando..." : "Entrar"}
+        {isBusy ? <Loader2 aria-hidden="true" className="animate-spin" /> : null}
+        {isBusy ? "Entrando..." : "Entrar"}
       </Button>
     </form>
   );
