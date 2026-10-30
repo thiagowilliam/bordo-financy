@@ -33,7 +33,7 @@ export class ProfileService {
   async update(user: SessionUser, input: UpdateProfile) {
     const updated = await this.repository.updateUser(user.id, input);
     if (!updated) throw new NotFoundException();
-    return toSessionUser(updated);
+    return toSessionUser(updated, user.googleEmail);
   }
 
   /**
@@ -63,7 +63,7 @@ export class ProfileService {
       const { user: updated, previous } = await this.repository.setPhoto(user.id, key);
       if (!updated) throw new NotFoundException();
       if (isOwnFile(previous)) await this.removeFile(previous);
-      return toSessionUser(updated);
+      return toSessionUser(updated, user.googleEmail);
     } catch (error) {
       await this.removeFile(key);
       throw error;
@@ -74,7 +74,7 @@ export class ProfileService {
     const { user: updated, previous } = await this.repository.setPhoto(user.id, null);
     if (!updated) throw new NotFoundException();
     if (isOwnFile(previous)) await this.removeFile(previous);
-    return toSessionUser(updated);
+    return toSessionUser(updated, user.googleEmail);
   }
 
   requestEmailChange(user: SessionUser, input: { email: string }) {

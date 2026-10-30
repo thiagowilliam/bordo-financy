@@ -133,7 +133,7 @@ Open points: the notice sent to the old address says to contact "o suporte do Bo
 3. **Database.** Code done, not yet run against a real Postgres (Docker was off). Drizzle schema and first migration, Nest provider, readiness check, seed from the MSW fixtures, Postgres in Docker Compose. See "Database" below.
 4. **Auth.** In two parts.
    - **4a, done:** e-mail and password (sign-up, sign-in, sign-out, session, forgot and reset password), Argon2id, sessions, global auth guard with `@Public()`, strict rate limits that fail closed. See "Auth" below.
-   - **4b, part 1 done:** mail delivery (BullMQ queue and SMTP transport, see "Mail") and the change of e-mail. **Left:** Google sign-in with state and PKCE (and the `google_email` it needs), which needs OAuth credentials.
+   - **4b, part 1 done:** mail delivery (BullMQ queue and SMTP transport, see "Mail") and the change of e-mail. **4b, part 2 done:** Google sign-in (see "Google sign-in" below).
 5. **Domains.** In order: `profile`, `categories`, `trips`, `expenses` (with base costs), `photos`. Each one is covered by tests that reuse the MSW handler cases.
    - **`profile`, done** (except photo and e-mail change, see "Profile").
    - **`categories`, done** (see "Categories").
@@ -146,7 +146,7 @@ Open points: the notice sent to the old address says to contact "o suporte do Bo
 
 Pieces that were postponed because they depend on infrastructure that comes later. Do them after the phases above, before or together with phase 6, and tick them here.
 
-- [ ] **Google sign-in** (phase 4b): authorization code flow with state and PKCE, `email` column on `oauth_accounts` (fills `profile.googleEmail`, today always `null`), the `account-exists` rule, `GET /api/auth/google` and its callback.
+- [x] **Google sign-in** (phase 4b): authorization code flow with state and PKCE, `email` column on `oauth_accounts` (fills `profile.googleEmail`), the `account-exists` rule, `GET /api/auth/google` and its callback.
 - [x] **Mail delivery**: done (see "Mail"). What is left is the provider account, domain and credentials (see "Sending real e-mail").
 - [x] **Change e-mail**: done (see "Profile" and `docs/auth.md`).
 - [ ] **Support contact** in the "e-mail changed" notice (see "Mail").
@@ -226,7 +226,6 @@ Contract in `docs/auth.md`. How the API implements it (`src/modules/auth`):
 - **Recovery:** one live link per account (a new request replaces the old), token stored hashed, 1 hour, single use (a conditional update makes it safe under concurrent requests). Resetting ends every session of the account. Google-only accounts can use it to add a password.
 - **E-mail:** recovery links are sent through the mail queue (see "Mail"). Without `MAIL_SMTP_URL` (development) the link is printed in the API log.
 - Validation errors are `400` with field paths (the MSW mocks answer `422`; the web client treats any 4xx as a failure, so this is fine).
-- Known gap: `profile.googleEmail` is always `null` until the Google flow stores the connected account's e-mail.
 
 Tests (`test/auth.test.ts`) run against a real Postgres: `globalSetup` creates `bordo_test` on the compose Postgres and migrates it. Without a reachable Postgres they are skipped locally; CI sets `REQUIRE_DATABASE=1` and has a Postgres service, so a missing database fails there.
 
@@ -327,7 +326,7 @@ Rules the server enforces beyond the shared schema (`422`):
 - The web app calls the API by default. `BACKEND_URL` (default `http://localhost:3001` in development, required in production) feeds the `/api/*` rewrite, so the session cookie is first party. The MSW mocks are opt-in: `NEXT_PUBLIC_API_MOCKING=enabled`, development only. `apps/web/.env.example` documents both.
 - The logged area layout reads the session on the server (`src/lib/server-session.ts`) and seeds the profile query, so the sidebar shows the right user on the first paint. A stale cookie renders the page and the client handles the `401`; the API clears the cookie on that response, which is what stops `/entrar` and `/viagens` from bouncing the visitor.
 - **Contract test:** `pnpm --filter @bordo/web test:contract` runs the web app's own client functions (the ones the browser uses, with their Zod schemas) against a running API, in the order a user would: sign up, profile, categories, trips, expenses and base costs, filters, CSV, photos, profile photo, account deletion. By default it calls `http://localhost:3000`, so it goes through the Next rewrite; set `CONTRACT_API_URL=http://localhost:3001` to hit the API directly. It needs `pnpm dev:api` (and `pnpm dev` for the default) running, signs up a throwaway user per run (the sign-up limit is 10 per hour per IP; `redis-cli flushall` resets it) and deletes the account at the end. It is not part of `pnpm test` or CI.
-- Features that still fail against the real API because their endpoint is not built: Google sign-in, change e-mail (see "Left for last").
+- Features that still fail against the real API because their endpoint is not built: change e-mail (see "Left for last").
 
 ## Environment
 
@@ -364,7 +363,7 @@ Validated with Zod at boot (`src/config/env.ts`). The process exits with every p
 - Logs are JSON in production and pretty in development. `authorization`, `cookie` and `set-cookie` are redacted.
 - `GET /api/health/ready` also checks Postgres (`select 1`).
 - Every route except health and the public auth routes needs a session (global `AuthGuard`).
-- Not done yet, by design: Google sign-in (phase 4b), Swagger (after the first domain).
+- Not done yet, by design: Swagger (after the first domain).
 
 ## Where we stopped
 
@@ -372,7 +371,7 @@ Last updated 2026-10-29. Done and merged: phases 1 to 3, 4a (e-mail and password
 
 ### Next
 
-1. Phase 4b, Google sign-in. Needs Google OAuth credentials. And the e-mail provider account and DNS (see "Sending real e-mail").
+1. The e-mail provider account and DNS (see "Sending real e-mail").
 2. The items under "Left for last": S3 compatible storage driver (AWS S3 or Cloudflare R2), change e-mail, profile total in other currencies, Swagger, `/termos` and `/privacidade` pages.
 3. The manual end to end pass of the whole app, once the above is done.
 
@@ -394,3 +393,13 @@ Last updated 2026-10-29. Done and merged: phases 1 to 3, 4a (e-mail and password
 - Commit scopes: `api` for the backend, `shared` for `packages/shared`, plus the existing domain scopes.
 - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` from the root before saying a task is done. Run `pnpm build` when routes, config or providers changed.
 - A change to a schema in `packages/shared` must update the MSW handlers and fixtures in the same commit.
+
+## Google sign-in
+
+- Routes: `GET /api/auth/google?next=/path[&link=1]` (`302` to Google) and `GET /api/auth/google/callback`. Both only ever answer redirects, never JSON, because they are browser navigations.
+- Credentials (Google Cloud Console, OAuth client of type "Web application"): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, all three or none. The redirect URI is on the **web** address (`<web>/api/auth/google/callback`) because Next proxies `/api` to the API, which keeps the session cookie first-party. It must be listed under "Authorized redirect URIs" exactly. Without the credentials the button lands on `/entrar?error=google`.
+- State and PKCE (S256): the state, the verifier and `next` live in the `bordo_oauth` cookie (httpOnly, `SameSite=Lax`, 10 minutes, path `/api/auth/google`), cleared on the callback whatever the outcome.
+- The identity comes from the ID token returned by Google's token endpoint; issuer, audience, expiry and `email_verified` are checked. Unverified e-mails are refused.
+- First access creates the user (`authProvider: GOOGLE`, verified, no password, default categories) and goes to `/onboarding`. A password account with the same e-mail is **not** linked: `/entrar?error=account-exists`. With `link=1` a signed-in user connects Google (one Google account per user, and a Google account belongs to one user); on failure the browser returns to `next` with `?google=error`.
+- `oauth_accounts.email` holds the connected address and fills `profile.googleEmail`.
+- Rate limit: 30 requests per 15 minutes per IP.

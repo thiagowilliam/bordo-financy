@@ -81,7 +81,10 @@ export class AuthService {
     if (!user || !valid) throw new UnauthorizedException("E-mail ou senha incorretos");
 
     const token = await this.sessions.create(user.id, client.userAgent);
-    return { user: toSessionUser(user), token };
+    return {
+      user: toSessionUser(user, await this.repository.findGoogleEmail(user.id)),
+      token,
+    };
   }
 
   async signOut(token: string | undefined) {

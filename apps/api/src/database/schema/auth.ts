@@ -58,6 +58,8 @@ export const oauthAccounts = pgTable(
   {
     provider: text().notNull(),
     providerUserId: text().notNull(),
+    /** E-mail of the connected provider account, shown on the profile as `googleEmail`. */
+    email: text().notNull(),
     userId: uuid()
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

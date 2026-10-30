@@ -39,7 +39,7 @@ export class SessionsService {
     if (refreshed) {
       await this.repository.extendSession(idHash, new Date(Date.now() + SESSION_TTL_MS));
     }
-    return { user: toSessionUser(row.user), refreshed };
+    return { user: toSessionUser(row.user, row.googleEmail), refreshed };
   }
 
   async destroy(token: string) {
