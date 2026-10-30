@@ -54,8 +54,13 @@ function ProfileSkeleton() {
   );
 }
 
+type ProfileScreenProps = {
+  /** The backend sent the browser back from Google with `?google=error`. */
+  googleError?: boolean;
+};
+
 /** "Perfil": account data, traveler history, security, data export and account deletion. */
-export function ProfileScreen() {
+export function ProfileScreen({ googleError = false }: ProfileScreenProps) {
   const router = useRouter();
   const profile = useProfile();
   const stats = useProfileStats();
@@ -89,6 +94,14 @@ export function ProfileScreen() {
     setHasUnsavedChanges(isDirty);
     return () => setHasUnsavedChanges(false);
   }, [isDirty, setHasUnsavedChanges]);
+
+  // Connecting Google is a full page trip, so its failure arrives in the URL. Say it once, then
+  // drop the param so a refresh does not repeat the toast.
+  useEffect(() => {
+    if (!googleError) return;
+    toast.error("Não foi possível conectar o Google. Tente de novo.");
+    router.replace("/perfil");
+  }, [googleError, router]);
   const name = useWatch({ control: form.control, name: "name" }) ?? "";
   const watchedCurrency = useWatch({ control: form.control, name: "currency" });
   const currency = watchedCurrency ?? profile.data?.currency;

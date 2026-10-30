@@ -12,25 +12,43 @@ import { fetchProfile } from "../api/client";
 import { ProfileScreen } from "./profile-screen";
 
 const replace = vi.fn();
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock("sonner", () => ({ toast: { error: toastError, success: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   replace.mockClear();
+  toastError.mockClear();
 });
 afterAll(() => server.close());
 
-function renderScreen() {
+function renderScreen(props: { googleError?: boolean } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <ProfileScreen />
+      <ProfileScreen {...props} />
     </QueryClientProvider>,
   );
 }
 
 describe("ProfileScreen", () => {
+  it("says Google could not be connected once and clears the param", async () => {
+    renderScreen({ googleError: true });
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("Não foi possível conectar o Google. Tente de novo."),
+    );
+    expect(replace).toHaveBeenCalledWith("/perfil");
+  });
+
+  it("stays quiet when Google did not fail", async () => {
+    renderScreen();
+    await screen.findByRole("heading", { name: "Marina Duarte" });
+    expect(replace).not.toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
   it("shows a busy region while loading", () => {
     renderScreen();
     expect(screen.getByRole("status", { busy: true })).toBeInTheDocument();
