@@ -1,3 +1,4 @@
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, Query, Req, Res } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
@@ -28,6 +29,7 @@ const flowCookieOptions = () => ({
 });
 
 /** Browser navigations, not fetches: both routes answer redirects, never JSON. */
+@ApiTags("Auth")
 @Public()
 @Controller("auth/google")
 export class GoogleAuthController {
@@ -36,6 +38,23 @@ export class GoogleAuthController {
     private readonly sessions: SessionsService,
   ) {}
 
+  @ApiOperation({
+    summary: "Start Google sign-in. Browser navigation, not a fetch: answers a redirect to Google",
+  })
+  @ApiQuery({
+    name: "next",
+    required: false,
+    description: "Same-origin path to land on afterwards.",
+  })
+  @ApiQuery({
+    name: "link",
+    required: false,
+    description: "`1` connects Google to the signed-in account instead of signing in.",
+  })
+  @ApiResponse({
+    status: 302,
+    description: "Redirect to Google, or to `/entrar?error=google` when Google sign-in is off.",
+  })
   @Get()
   async start(
     @Query("next") next: string | undefined,
@@ -69,6 +88,14 @@ export class GoogleAuthController {
     }
   }
 
+  @ApiOperation({
+    summary: "Google redirects back here. Sets the session cookie and redirects to the web app",
+  })
+  @ApiResponse({
+    status: 302,
+    description:
+      "Redirect to `next` (new users to `/onboarding`), or to `/entrar?error=google` or `?error=account-exists`.",
+  })
   @Get("callback")
   async callback(
     @Query() query: { code?: string; state?: string; error?: string },

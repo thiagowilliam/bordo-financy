@@ -1,3 +1,21 @@
+import {
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiGoneResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from "@nestjs/swagger";
+import { ApiSession } from "../../common/docs/api-session.decorator.js";
+import {
+  EmailChangedDto,
+  EmailChangeTokenDto,
+  EmailSentDto,
+  ResetTokenDto,
+  SignedOutDto,
+  UserDto,
+} from "../../common/docs/responses.js";
 import { Body, Controller, Get, HttpCode, Param, Post, Req, Res } from "@nestjs/common";
 import {
   confirmEmailChangeSchema,
@@ -27,10 +45,14 @@ const clientOf = (request: FastifyRequest) => ({
   userAgent: request.headers["user-agent"] ?? null,
 });
 
+@ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  @ApiOperation({ summary: "Create an account with e-mail and password. Sets the session cookie" })
+  @ApiCreatedResponse({ type: UserDto })
+  @ApiConflictResponse({ description: "There is already an account with this e-mail." })
   @Public()
   @Post("sign-up")
   async signUp(
@@ -43,6 +65,9 @@ export class AuthController {
     return user;
   }
 
+  @ApiOperation({ summary: "Sign in with e-mail and password. Sets the session cookie" })
+  @ApiOkResponse({ type: UserDto })
+  @ApiUnauthorizedResponse({ description: "Wrong e-mail or password." })
   @Public()
   @Post("sign-in")
   @HttpCode(200)
@@ -56,6 +81,8 @@ export class AuthController {
     return user;
   }
 
+  @ApiOperation({ summary: "Sign out and clear the session cookie" })
+  @ApiOkResponse({ type: SignedOutDto })
   /** Public so a stale cookie can still be cleared. */
   @Public()
   @Post("sign-out")
@@ -66,11 +93,19 @@ export class AuthController {
     return {};
   }
 
+  @ApiOperation({ summary: "The signed-in user" })
+  @ApiSession()
+  @ApiOkResponse({ type: UserDto })
   @Get("session")
   session(@CurrentUser() user: SessionUser) {
     return user;
   }
 
+  @ApiOperation({
+    summary:
+      "E-mail a password recovery link. Answers the same whether or not the e-mail has an account",
+  })
+  @ApiOkResponse({ type: EmailSentDto })
   @Public()
   @Post("forgot-password")
   @HttpCode(200)
@@ -78,12 +113,18 @@ export class AuthController {
     return this.auth.forgotPassword(body, clientOf(request));
   }
 
+  @ApiOperation({ summary: "Check a password recovery link" })
+  @ApiOkResponse({ type: ResetTokenDto })
+  @ApiGoneResponse({ description: "The link expired or was already used." })
   @Public()
   @Get("reset-password/:token")
   checkResetToken(@Param("token") token: string) {
     return this.auth.checkResetToken(token);
   }
 
+  @ApiOperation({ summary: "Check an e-mail change link and get the address it would switch to" })
+  @ApiOkResponse({ type: EmailChangeTokenDto })
+  @ApiGoneResponse({ description: "The link expired or was already used." })
   /** The address a confirmation link would switch the account to. */
   @Public()
   @Get("email-change/:token")
@@ -91,6 +132,10 @@ export class AuthController {
     return this.auth.checkEmailChangeToken(token);
   }
 
+  @ApiOperation({ summary: "Confirm an e-mail change. Ends every session of the account" })
+  @ApiOkResponse({ type: EmailChangedDto })
+  @ApiGoneResponse({ description: "The link expired or was already used." })
+  @ApiConflictResponse({ description: "The address was taken in the meantime." })
   /** Ends every session of the account, so the browser's cookie is cleared too. */
   @Public()
   @Post("email-change/confirm")
@@ -105,6 +150,11 @@ export class AuthController {
     return result;
   }
 
+  @ApiOperation({
+    summary: "Set a new password with a recovery link. Ends every session of the account",
+  })
+  @ApiOkResponse({ type: SignedOutDto })
+  @ApiGoneResponse({ description: "The link expired or was already used." })
   @Public()
   @Post("reset-password")
   @HttpCode(200)

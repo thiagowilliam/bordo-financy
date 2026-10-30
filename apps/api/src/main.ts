@@ -6,6 +6,7 @@ import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 
 import { AppModule } from "./app.module.js";
 import { configureApp } from "./common/http/configure-app.js";
+import { configureSwagger } from "./common/http/configure-swagger.js";
 import { createAdapter } from "./common/http/create-adapter.js";
 import { validateEnv } from "./config/env.js";
 
@@ -21,6 +22,7 @@ async function bootstrap() {
     },
   );
   await configureApp(app);
+  if (env.SWAGGER_ENABLED ?? env.NODE_ENV !== "production") configureSwagger(app);
   await app.listen(env.PORT, env.HOST);
 }
 
