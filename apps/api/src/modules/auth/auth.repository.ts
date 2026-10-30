@@ -7,16 +7,19 @@ import { DEFAULT_CATEGORIES } from "../../database/default-categories.js";
 import {
   categories,
   emailChangeTokens,
+  oauthAccounts,
   passwordResetTokens,
   sessions,
   users,
 } from "../../database/schema/index.js";
 import type { SessionUser } from "./session-user.js";
 
+export const GOOGLE_PROVIDER = "google";
+
 export type UserRow = typeof users.$inferSelect;
 
 /** Maps a row to what the web app reads as the profile. */
-export function toSessionUser(user: UserRow): SessionUser {
+export function toSessionUser(user: UserRow, googleEmail: string | null = null): SessionUser {
   return {
     id: user.id,
     name: user.name,
@@ -25,8 +28,7 @@ export function toSessionUser(user: UserRow): SessionUser {
     photoUrl: toPhotoUrl(user.photoUrl),
     currency: user.currency as SessionUser["currency"],
     hasPassword: user.passwordHash !== null,
-    // Filled in when Google sign-in lands and stores the connected account's e-mail.
-    googleEmail: null,
+    googleEmail,
     createdAt: user.createdAt.toISOString().slice(0, 10),
   };
 }
@@ -63,6 +65,73 @@ export class AuthRepository {
     });
   }
 
+  /** The Google e-mail connected to the account, or null. */
+  async findGoogleEmail(userId: string) {
+    const [row] = await this.db
+      .select({ email: oauthAccounts.email })
+      .from(oauthAccounts)
+      .where(and(eq(oauthAccounts.userId, userId), eq(oauthAccounts.provider, GOOGLE_PROVIDER)))
+      .limit(1);
+    return row?.email ?? null;
+  }
+
+  /** The user that already connected this Google account (matched by Google's stable `sub`). */
+  async findUserByGoogleId(providerUserId: string) {
+    const [row] = await this.db
+      .select({ user: users })
+      .from(oauthAccounts)
+      .innerJoin(users, eq(users.id, oauthAccounts.userId))
+      .where(
+        and(
+          eq(oauthAccounts.provider, GOOGLE_PROVIDER),
+          eq(oauthAccounts.providerUserId, providerUserId),
+        ),
+      )
+      .limit(1);
+    return row?.user ?? null;
+  }
+
+  /** First Google access: the account, its default categories and the Google link, or nothing. */
+  async createGoogleUser(values: {
+    email: string;
+    name: string;
+    photoUrl: string | null;
+    providerUserId: string;
+  }) {
+    return this.db.transaction(async (tx) => {
+      const { providerUserId, ...profile } = values;
+      const [user] = await tx
+        .insert(users)
+        .values({ ...profile, authProvider: "GOOGLE", emailVerifiedAt: new Date() })
+        .returning();
+      await tx
+        .insert(categories)
+        .values(
+          DEFAULT_CATEGORIES.map((category) => ({ ...category, userId: user.id, isDefault: true })),
+        );
+      await tx.insert(oauthAccounts).values({
+        provider: GOOGLE_PROVIDER,
+        providerUserId,
+        email: values.email,
+        userId: user.id,
+      });
+      return user;
+    });
+  }
+
+  /** Connects a Google account to an existing user. Throws a unique violation if it is taken. */
+  async linkGoogle(values: { userId: string; providerUserId: string; email: string }) {
+    await this.db.transaction(async (tx) => {
+      // One Google account per user: a new connection replaces the previous one.
+      await tx
+        .delete(oauthAccounts)
+        .where(
+          and(eq(oauthAccounts.userId, values.userId), eq(oauthAccounts.provider, GOOGLE_PROVIDER)),
+        );
+      await tx.insert(oauthAccounts).values({ provider: GOOGLE_PROVIDER, ...values });
+    });
+  }
+
   async setPassword(userId: string, passwordHash: string) {
     await this.db.update(users).set({ passwordHash }).where(eq(users.id, userId));
   }
@@ -79,9 +148,18 @@ export class AuthRepository {
   /** The session and its user, if the session has not expired. */
   async findActiveSession(idHash: string) {
     const [row] = await this.db
-      .select({ user: users, expiresAt: sessions.expiresAt, createdAt: sessions.createdAt })
+      .select({
+        user: users,
+        googleEmail: oauthAccounts.email,
+        expiresAt: sessions.expiresAt,
+        createdAt: sessions.createdAt,
+      })
       .from(sessions)
       .innerJoin(users, eq(users.id, sessions.userId))
+      .leftJoin(
+        oauthAccounts,
+        and(eq(oauthAccounts.userId, users.id), eq(oauthAccounts.provider, GOOGLE_PROVIDER)),
+      )
       .where(and(eq(sessions.idHash, idHash), gt(sessions.expiresAt, new Date())))
       .limit(1);
     return row ?? null;

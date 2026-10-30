@@ -64,6 +64,17 @@ describe("validateEnv", () => {
     expect(() => validateEnv({ PORT: "abc", LOG_LEVEL: "loud" })).toThrow(/PORT[\s\S]*LOG_LEVEL/);
   });
 
+  it("takes the Google credentials all together or not at all", () => {
+    const google = {
+      GOOGLE_CLIENT_ID: "id",
+      GOOGLE_CLIENT_SECRET: "secret",
+      GOOGLE_REDIRECT_URI: "http://localhost:3000/api/auth/google/callback",
+    };
+    expect(validateEnv({}).GOOGLE_CLIENT_ID).toBeUndefined();
+    expect(validateEnv(google).GOOGLE_CLIENT_SECRET).toBe("secret");
+    expect(() => validateEnv({ GOOGLE_CLIENT_ID: "id" })).toThrow(/go together/);
+  });
+
   it("rejects a numeric TRUST_PROXY", () => {
     expect(() => validateEnv({ TRUST_PROXY: "1" })).toThrow(/TRUST_PROXY/);
   });

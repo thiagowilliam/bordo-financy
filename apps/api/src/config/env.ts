@@ -53,6 +53,11 @@ export const envSchema = z
     QUEUE_PREFIX: z.string().min(1).default("bordo"),
     /** Public address of the web app, used in e-mailed links. */
     WEB_URL: z.url().default("http://localhost:3000"),
+    /** Google OAuth client (Google Cloud Console, "Web application"). All three or none: without them Google sign-in is off. */
+    GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    /** Must match an authorized redirect URI of the client. Goes through the web app: `<web>/api/auth/google/callback`. */
+    GOOGLE_REDIRECT_URI: z.preprocess(emptyToUndefined, z.url().optional()),
     TRUST_PROXY: z.preprocess(emptyToUndefined, z.string().optional()),
     THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
@@ -82,6 +87,14 @@ export const envSchema = z
           });
         }
       }
+    }
+    const google = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI];
+    if (google.some(Boolean) && !google.every(Boolean)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["GOOGLE_CLIENT_ID"],
+        message: "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI go together",
+      });
     }
     try {
       parseTrustProxy(env.TRUST_PROXY);

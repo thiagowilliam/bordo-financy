@@ -18,5 +18,6 @@ export const AUTH_LIMITS = {
   forgotPassword: { ip: { limit: 10, windowMs: HOUR }, email: { limit: 3, windowMs: HOUR } },
   resetPassword: { ip: { limit: 10, windowMs: HOUR } },
   emailChange: { user: { limit: 3, windowMs: HOUR } },
+  google: { ip: { limit: 30, windowMs: 15 * MINUTE } },
   confirmEmailChange: { ip: { limit: 10, windowMs: HOUR } },
 } as const;

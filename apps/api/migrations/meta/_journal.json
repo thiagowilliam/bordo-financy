@@ -29,6 +29,13 @@
       "when": 1793284221964,
       "tag": "0003_trip-budget-changes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793368120671,
+      "tag": "0004_google-oauth-email",
+      "breakpoints": true
     }
   ]
 }
