@@ -1,5 +1,6 @@
 import { ProfileScreen } from "@/features/profile";
 
-export default function PerfilPage() {
-  return <ProfileScreen />;
+export default async function PerfilPage({ searchParams }: PageProps<"/perfil">) {
+  const { google } = await searchParams;
+  return <ProfileScreen googleError={google === "error"} />;
 }
