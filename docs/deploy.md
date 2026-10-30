@@ -68,15 +68,24 @@ The API refuses to start in production without `MAIL_SMTP_URL` and `MAIL_FROM`. 
 3. Create an API key and build the SMTP URL: `smtps://resend:API_KEY@smtp.resend.com:465`.
 4. Use a sender on the verified domain: `Bordo <nao-responda@thiagowilliam.com.br>`.
 
-Both values go in `.env.production` (next step). Quote the sender, since it has spaces.
+Both values go in `.env.production` (step 5). Quote the sender, since it has spaces.
 
-## 4. First start
+## 4. Google sign-in (optional)
+
+Without it the "Continuar com Google" button lands on `/entrar?error=google` and everything else works.
+
+1. In the [Google Cloud Console](https://console.cloud.google.com) open **APIs e serviços > Credenciais** and the OAuth client of type "Web application".
+2. Add `https://bordo.thiagowilliam.com.br` to **Authorized JavaScript origins** and `https://bordo.thiagowilliam.com.br/api/auth/google/callback` to **Authorized redirect URIs**. It must match exactly, and can take a few minutes to apply.
+3. On the **OAuth consent screen**, publish the app. While it is in "Testing" only the listed test users can sign in.
+4. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env.production`. The redirect URI is built from `DOMAIN` in `compose.prod.yaml`.
+
+## 5. First start
 
 ```bash
 # as deploy
 git clone git@github.com:thiagowilliam/bordo-financy.git && cd bordo-financy
 cp deploy/.env.production.example .env.production
-nano .env.production        # DOMAIN, POSTGRES_PASSWORD, MAIL_SMTP_URL, MAIL_FROM
+nano .env.production        # DOMAIN, POSTGRES_PASSWORD, MAIL_SMTP_URL, MAIL_FROM, GOOGLE_* (optional)
 chmod 600 .env.production
 docker compose -f compose.prod.yaml --env-file .env.production up -d --build
 docker compose -f compose.prod.yaml --env-file .env.production ps
@@ -84,7 +93,7 @@ docker compose -f compose.prod.yaml --env-file .env.production ps
 
 `migrate` runs and exits before `api` starts. Open `https://bordo.thiagowilliam.com.br`.
 
-## 5. Updating
+## 6. Updating
 
 ```bash
 cd ~/bordo-financy && ./deploy/deploy.sh
@@ -92,7 +101,7 @@ cd ~/bordo-financy && ./deploy/deploy.sh
 
 Pulls `main`, rebuilds what changed, runs new migrations, and recreates the containers that changed. Roll back with `git checkout <commit>` and `docker compose ... up -d --build`. A migration is not undone by that: restore the dump (below) if one has to go.
 
-## 6. Backups
+## 7. Backups
 
 `./deploy/backup.sh` writes a database dump and a tar of the photos into `~/bordo-financy/backups` and keeps 14 days. Schedule it:
 
@@ -109,7 +118,7 @@ $c exec -T postgres pg_restore -U bordo -d bordo --clean --if-exists < backups/d
 $c exec -T api tar -C /app/storage -xf - < backups/photos-<stamp>.tar
 ```
 
-## 7. Operating
+## 8. Operating
 
 ```bash
 c="docker compose -f compose.prod.yaml --env-file .env.production"

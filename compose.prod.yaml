@@ -54,6 +54,11 @@ services:
       WEB_URL: https://${DOMAIN}
       MAIL_SMTP_URL: ${MAIL_SMTP_URL:?set MAIL_SMTP_URL}
       MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM}
+      # Google sign-in is optional: without GOOGLE_CLIENT_ID the button lands on /entrar?error=google.
+      # The redirect URI goes through the web host (Caddy proxies /api), and must be authorized in Google.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_CLIENT_ID:+https://${DOMAIN}/api/auth/google/callback}
       # The API is only reachable through Caddy (no published port), so the private ranges Docker
       # hands out to the `internal` network are the trusted proxy. Caddy replaces any
       # X-Forwarded-For sent by a visitor with the real address.
