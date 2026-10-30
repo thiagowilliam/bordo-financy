@@ -75,6 +75,12 @@ describe("validateEnv", () => {
     expect(() => validateEnv({ GOOGLE_CLIENT_ID: "id" })).toThrow(/go together/);
   });
 
+  it("reads SWAGGER_ENABLED as a flag and leaves it unset by default", () => {
+    expect(validateEnv({}).SWAGGER_ENABLED).toBeUndefined();
+    expect(validateEnv({ SWAGGER_ENABLED: "true" }).SWAGGER_ENABLED).toBe(true);
+    expect(validateEnv({ SWAGGER_ENABLED: "false" }).SWAGGER_ENABLED).toBe(false);
+  });
+
   it("rejects a numeric TRUST_PROXY", () => {
     expect(() => validateEnv({ TRUST_PROXY: "1" })).toThrow(/TRUST_PROXY/);
   });

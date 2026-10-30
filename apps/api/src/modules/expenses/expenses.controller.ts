@@ -1,3 +1,12 @@
+import {
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from "@nestjs/swagger";
+import { ApiSession } from "../../common/docs/api-session.decorator.js";
+import { BaseCostDto, DeletedExpenseDto, ExpenseDto } from "../../common/docs/responses.js";
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import {
   createExpenseSchema,
@@ -32,10 +41,15 @@ class ExpenseFiltersDto extends createZodDto(
   }),
 ) {}
 
+@ApiTags("Expenses")
+@ApiSession()
 @Controller("trips/:tripId")
 export class ExpensesController {
   constructor(private readonly expenses: ExpensesService) {}
 
+  @ApiOperation({ summary: "List the expenses of a trip, newest first, with optional filters" })
+  @ApiOkResponse({ type: [ExpenseDto] })
+  @ApiNotFoundResponse({ description: "Not found, or it belongs to someone else." })
   @Get("expenses")
   list(
     @CurrentUser() user: SessionUser,
@@ -45,6 +59,9 @@ export class ExpensesController {
     return this.expenses.list(user, tripId, filters);
   }
 
+  @ApiOperation({ summary: "Create an expense (kind DAILY) or a base cost (kind BASE)" })
+  @ApiCreatedResponse({ type: ExpenseDto })
+  @ApiNotFoundResponse({ description: "Not found, or it belongs to someone else." })
   @Post("expenses")
   create(
     @CurrentUser() user: SessionUser,
@@ -54,6 +71,9 @@ export class ExpensesController {
     return this.expenses.create(user, tripId, body);
   }
 
+  @ApiOperation({ summary: "Replace an expense" })
+  @ApiOkResponse({ type: ExpenseDto })
+  @ApiNotFoundResponse({ description: "Not found, or it belongs to someone else." })
   @Put("expenses/:id")
   update(
     @CurrentUser() user: SessionUser,
@@ -63,12 +83,18 @@ export class ExpensesController {
     return this.expenses.update(user, tripId, id, body);
   }
 
+  @ApiOperation({ summary: "Delete an expense" })
+  @ApiOkResponse({ type: DeletedExpenseDto })
+  @ApiNotFoundResponse({ description: "Not found, or it belongs to someone else." })
   @Delete("expenses/:id")
   @HttpCode(200)
   remove(@CurrentUser() user: SessionUser, @Param() { tripId, id }: ExpenseParamDto) {
     return this.expenses.remove(user, tripId, id);
   }
 
+  @ApiOperation({ summary: "List the base costs (expenses of kind BASE) of a trip" })
+  @ApiOkResponse({ type: [BaseCostDto] })
+  @ApiNotFoundResponse({ description: "Not found, or it belongs to someone else." })
   /** Base costs are expenses of kind BASE; they are created and edited through `expenses`. */
   @Get("base-costs")
   listBase(@CurrentUser() user: SessionUser, @Param() { tripId }: TripParamDto) {

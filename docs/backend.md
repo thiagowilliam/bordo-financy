@@ -153,7 +153,7 @@ Pieces that were postponed because they depend on infrastructure that comes late
 - [ ] **S3 compatible storage driver** (AWS S3 or Cloudflare R2): a second `StorageService`, `STORAGE_DRIVER=s3`, bucket, endpoint and credentials in env, `MEDIA_BASE_URL` pointing at the bucket or CDN. Needed before running more than one instance or on Fargate or Cloud Run.
 - [ ] **Oversized upload through the Next rewrite**: a file above the limit answers `413` straight from the API, but through the web app's rewrite the connection is reset and Next answers `500`. The web client already blocks files above 10 MB, so only other clients see it.
 - [ ] **Profile total in other currencies**: `profile/stats` only adds expenses in the main currency. Decide the exchange rate source (provider, daily snapshot, or rate stored on each expense) and sum everything.
-- [ ] **Swagger**, generated from the shared schemas once a few domains exist.
+- [x] **Swagger**: done (see "API docs (Swagger)").
 
 ## Running the API
 
@@ -349,6 +349,7 @@ Validated with Zod at boot (`src/config/env.ts`). The process exits with every p
 | `MAIL_RETRY_DELAY_MS` | `10000`                 | First retry delay of a failed e-mail, doubled each attempt (5 attempts)                                             |
 | `QUEUE_PREFIX`        | `bordo`                 | Prefix of the queue keys in Redis                                                                                   |
 | `WEB_URL`             | `http://localhost:3000` | Public web address, used in e-mailed links                                                                          |
+| `SWAGGER_ENABLED`     | on outside production   | Serves the API docs at `/api/docs`. Set `true` to publish them in production                                        |
 | `TRUST_PROXY`         | none                    | Addresses or CIDRs of the proxies in front of the API, comma separated. Never a number                              |
 | `THROTTLE_TTL_MS`     | `60000`                 | Window of the global limit                                                                                          |
 | `THROTTLE_LIMIT`      | `120`                   | Requests per window per client IP                                                                                   |
@@ -363,7 +364,6 @@ Validated with Zod at boot (`src/config/env.ts`). The process exits with every p
 - Logs are JSON in production and pretty in development. `authorization`, `cookie` and `set-cookie` are redacted.
 - `GET /api/health/ready` also checks Postgres (`select 1`).
 - Every route except health and the public auth routes needs a session (global `AuthGuard`).
-- Not done yet, by design: Swagger (after the first domain).
 
 ## Where we stopped
 
@@ -372,7 +372,7 @@ Last updated 2026-10-29. Done and merged: phases 1 to 3, 4a (e-mail and password
 ### Next
 
 1. The e-mail provider account and DNS (see "Sending real e-mail").
-2. The items under "Left for last": S3 compatible storage driver (AWS S3 or Cloudflare R2), change e-mail, profile total in other currencies, Swagger, `/termos` and `/privacidade` pages.
+2. The items under "Left for last": S3 compatible storage driver (AWS S3 or Cloudflare R2), change e-mail, profile total in other currencies.
 3. The manual end to end pass of the whole app, once the above is done.
 
 ### Gotchas learned
@@ -403,3 +403,11 @@ Last updated 2026-10-29. Done and merged: phases 1 to 3, 4a (e-mail and password
 - First access creates the user (`authProvider: GOOGLE`, verified, no password, default categories) and goes to `/onboarding`. A password account with the same e-mail is **not** linked: `/entrar?error=account-exists`. With `link=1` a signed-in user connects Google (one Google account per user, and a Google account belongs to one user); on failure the browser returns to `next` with `?google=error`.
 - `oauth_accounts.email` holds the connected address and fills `profile.googleEmail`.
 - Rate limit: 30 requests per 15 minutes per IP.
+
+## API docs (Swagger)
+
+- Swagger UI at `/api/docs` and the OpenAPI JSON at `/api/docs-json` (through the web app: `http://localhost:3000/api/docs`). Built from the routes with `@nestjs/swagger`; `nestjs-zod` turns the shared Zod schemas into the request and response models, so the docs come from the same source the web client validates with.
+- On outside production; off in production unless `SWAGGER_ENABLED=true` (it is not passed by `compose.prod.yaml`). The document has no secrets, but it maps every route, so it is opt-in there.
+- Authenticated routes are marked with the `bordo_session` cookie scheme (`@ApiSession()` on the controller). Sign in from the same browser and "Try it out" sends the cookie. The Google routes are browser navigations and are documented as redirects, so try them from the web app.
+- Response models are in `src/common/docs/responses.ts`, one `createZodDto` per shared schema. A new route needs `@ApiTags` (controller), `@ApiOperation({ summary })` and its response `type`; `test/swagger.test.ts` fails if a route has no tag or summary, or if the cookie scheme is missing or present on the wrong routes.
+- Setup is `common/http/configure-swagger.ts`, called from `main.ts`.

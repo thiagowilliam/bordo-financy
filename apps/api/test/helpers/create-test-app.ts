@@ -58,6 +58,7 @@ export async function createTestApp(
     "MAIL_FROM",
     "MAIL_WORKER",
     "MAIL_RETRY_DELAY_MS",
+    "SWAGGER_ENABLED",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "GOOGLE_REDIRECT_URI",
@@ -73,6 +74,7 @@ export async function createTestApp(
   const { AppModule } = await import("../../src/app.module.js");
   const { configureApp } = await import("../../src/common/http/configure-app.js");
   const { createAdapter } = await import("../../src/common/http/create-adapter.js");
+  const { configureSwagger } = await import("../../src/common/http/configure-swagger.js");
 
   const builder = Test.createTestingModule({ imports: [AppModule], controllers: [TestController] });
   const moduleRef = await customize(builder).compile();
@@ -84,6 +86,8 @@ export async function createTestApp(
     },
   );
   await configureApp(app);
+  // Same switch as main.ts, but opt-in here so the other suites do not build the document.
+  if (env.SWAGGER_ENABLED === "true") configureSwagger(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;

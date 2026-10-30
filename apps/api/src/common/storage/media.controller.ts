@@ -1,3 +1,4 @@
+import { ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Controller, Get, NotFoundException, Param, Res } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import type { FastifyReply } from "fastify";
@@ -11,12 +12,15 @@ import { contentTypeOfKey } from "./storage-key.js";
  * `<img>` cannot send a token, and the keys carry a random uuid, so they cannot be guessed.
  * Not rate limited: one page can load dozens of photos.
  */
+@ApiTags("Media")
 @Controller("media")
 @Public()
 @SkipThrottle()
 export class MediaController {
   constructor(private readonly storage: LocalStorageService) {}
 
+  @ApiOperation({ summary: "A stored photo. Public, like a CDN: the key carries a random uuid" })
+  @ApiOkResponse({ description: "The image.", schema: { type: "string", format: "binary" } })
   @Get("*")
   async get(@Param("*") path: string, @Res() reply: FastifyReply) {
     const contentType = contentTypeOfKey(path);

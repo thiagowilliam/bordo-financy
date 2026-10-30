@@ -58,6 +58,8 @@ export const envSchema = z
     GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     /** Must match an authorized redirect URI of the client. Goes through the web app: `<web>/api/auth/google/callback`. */
     GOOGLE_REDIRECT_URI: z.preprocess(emptyToUndefined, z.url().optional()),
+    /** Swagger UI at `/api/docs`. On by default outside production; set `true` to publish it there. */
+    SWAGGER_ENABLED: z.stringbool().optional(),
     TRUST_PROXY: z.preprocess(emptyToUndefined, z.string().optional()),
     THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(120),
